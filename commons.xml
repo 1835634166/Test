@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<common xmlns="http://www.brilliance.com.cn/common" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.brilliance.com.cn/common schema/common.xsd">
+    <public>
+	
+	    <!-- 收支申报反馈报文本地文件下载目录 -->
+		<sys name="LOCAL_SZSB_FEEDBACK" value="/app/bspt/xmls/rcv"/>
+		<!-- 收支申报测试/生产环境(Y/N) -->
+		<sys name="TESTFLG" value="N"/>
+
+        <!-- 核心相关接口 -->
+        <sys name="COMMONIMPORT" value="cfg/etc/commonimport.xml"/>
+        <sys name="ENCODING" value="GBK"/>
+        
+    </public>
+
+    <functions ref="cfg/etc/functions.xml"/>
+    <codetables ref="cfg/etc/codetables.xml"/>
+    <modules ref="cfg/etc/modules.xml"/>
+
+    <!-- 连接 -->
+    <!-- 声明会使用到的connection -->
+    <connections>
+	
+	
+	    <connection class="FtpConnection_beta" id="ftpConn">
+			<property name="username" value="gjyw"/>
+			<property name="xpassword" value="Z2p5dw==" encrypt="BASE64"/>
+			<property name="url" value="192.168.250.63"/>
+			<property name="port" value="21"/>
+			<!-- FTP读操作超时时间 -->
+			<property name="so_timeout" value="60000"/>
+			<!-- FTP默认超时建 -->
+			<property name="default_timeout" value="60000"/>
+			<!-- 连接超时时间，默认是无限超时 -->
+			<property name="connect_timeout" value="60000"/>
+			<!-- 数据传输超时时间，默认是无限超时 -->
+			<property name="receive_timeout" value="60000"/>
+		</connection>
+    </connections>
+
+    <!-- 处理类 -->
+    <!-- 声明会使用到的filter -->
+    <filters>
+	    <filter id="splitFilter" class="SplitFilter">
+            <parameter name="split_strategy" value="|"/>
+        </filter>
+        <filter id="Filter" class="ChartFilter"/>
+        <filter id="chartFilter" class="ChartFilter"/>
+        <filter id="resultSetFilter" class="ResultSetFilter"/><!-- 数据库ResultSet处理类 -->
+        <filter id="publicFilter" class="PublicFilter"/><!-- 数据处理类 -->
+        <filter id="fixedFilter" class="FixedFilter"/><!-- 数据处理类 -->
+        <filter id="xmlFilter" class="XmlFilter"/><!-- XML报文处理类 -->
+        <filter id="socketFilter" class="SocketFilter"/><!-- socket服务端处理类 -->
+        <filter id="fixFilter" class="FixFilter"/><!-- fix -->
+        <filter id="sqlFilter" class="SqlFilter"/><!-- SQL执行类 -->
+        <filter id="swiftFilter" class="SwiftFilter"/><!-- swift报文 -->
+        <filter id="beanFilter" class="BeanFilter"/><!-- bean -->
+        <filter id="gsonFilter" class="GsonFilter"/><!-- json -->
+        <filter id="excelFilter" class="ExcelFilter"/>
+        <filter id="mqFilter" class="MQFilter"/>
+
+    </filters>
+</common>
