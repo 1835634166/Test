@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<root xmlns="http://www.brilliance.com.cn/interface"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://www.brilliance.com.cn/interface ../etc/schema/interface.xsd">
+
+    <!--2126 -->
+    <interface id="O_M13_TDL" type="server" version="2.0" defaultScope="transaction">
+
+        <transaction id="O_M13_TDL" version="2.0" >
+            <step id="1">
+                <filter type="in" ref="publicFilter">
+                    <field tag="filepath" value="${this[0]}"/>
+                </filter>
+                <connection ref="fileConnection" type="in" encoding="#{SC_ENCODING}">
+                    <property name="path" value="${filepath}"/>
+                    <property name="type" value="list"/>
+                </connection>
+
+                <!-- 解析文件 -->
+                <filter ref="pipeFileFilter" type="in" encoding="#{SC_ENCODING}">
+                    <field tag="rsize" value="${__this.getRecordSize()}"/>
+                    <foreach tag="i" end="${rsize}" condition="${__this.next()}">
+                        <field tag="LevyNo[${i}]"             etag="0"   description="申报号码"/>
+                        <field tag="OperType[${i}]"           etag="1"   description="操作类型"/>
+                        <field tag="ActionDesc[${i}]"         etag="2"   description="变更/撤销原因"/>
+                        <field tag="BankOrgCode[${i}]"        etag="3"   description="银行机构代码"/>
+                        <field tag="EconDeptClass[${i}]"      etag="4"   description="国民经济部门分类"/>
+                        <field tag="SubmitDate[${i}]"         etag="5"   description="余额对应日期"/>
+                        <field tag="CurrencyCode[${i}]"       etag="6"   description="币种"/>
+                        <field tag="OneBalance[${i}]"         etag="7"   description="1年（含）以下账户余额"/>
+                        <field tag="MoreOneBalance[${i}]"     etag="8"   description="1年以上账户余额"/>
+                       <field tag="SubmitDate[${i}]" value="${isEmpty(SubmitDate[i])?null:parseDate(SubmitDate[i],'yyyy-MM-dd')}"/>
+                    </foreach>
+                </filter>
+                <!-- 报送平台数据库连接 -->
+                <!-- 进行相应的数据库操作 -->
+                <connection ref="szsbJdbcConn" type="in"/>
+
+
+
+                <filter type="in" ref="sqlFilter">
+                    <foreach tag="i" end="${rsize}">
+                        <field tag="codes" etag="select decnum from bch where cnapno = ?" type="LST">
+                            <argument value="${BankOrgCode[i]}"/>
+                        </field>
+                        <field tag="tmpcode" value="${codes[0]['DECNUM']}"/>
+                        <field tag="tmpdate" value="${formatNow('yyMMdd')}"/>
+                        <field tag="tmpNo" value="14"/>
+                        <field tag="tmpdate1" value="${tmpNo}${tmpdate}"/>
+                        <field tag="tmplsh" value="${__this.getCNTinr1(tmpdate1,4)}"/>
+                        <field tag="LevyNo[${i}]" value="${tmpcode}${tmpdate}${tmpNo}${tmplsh}"/>
+                    </foreach>
+                </filter>
+
+
+                <filter type="in" ref="sqlFilter">
+                    <foreach tag="i" end="${rsize}">
+                    	<field tag="tdlinr" value="${__this.getCNTinr1('tdl')}"/>
+                        <field etag="insert into tdl (inr,LevyNo,OperType,ActionDesc,BankOrgCode,EconDeptClass,SubmitDate,CurrencyCode,OneBalance,MoreOneBalance) values(?,?,?,?,?,?,?,?,?,?)">
+                            <argument value="${tdlinr}"/>
+                            <argument value="${LevyNo[i]}"/>
+                            <argument value="${OperType[i]}"/>
+							<argument value="${ActionDesc[i]}"/>
+							<argument value="${BankOrgCode[i]}"/>
+							<argument value="${EconDeptClass[i]}"/>
+							<argument value="${SubmitDate[i]}"/>
+							<argument value="${CurrencyCode[i]}"/>
+							<argument value="${OneBalance[i]}"/>
+							<argument value="${MoreOneBalance[i]}"/>
+                        </field>
+                                
+                        
+                        
+                        <field tag="ocrs" etag="select inr from bch where DECNUM = ?" type="LST">
+                            <argument value="${BankOrgCode[i]}"/>
+                        </field>
+                        <field tag="bchinr" value="${ocrs.size()>0?ocrs[0]['inr']:''}"/>
+
+                        
+                       <field etag="insert into DBL(INR,OBJTYP,OBJINR,RPTNO,BASSTA,DCLSTA,VRFSTA,OWNEXTKEY,OWNUSR,TRNINR,CREDAT,RELDAT,TMPREF,TRDTYP,ACTTYP,SNDFLG,DATSRC,PTYNUM,EXTINF,FILNAM,PNTINR,CURFLG) values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)">
+                    	     <argument value="${__this.getCNTinr1('dbl')}"/>
+                    		 <argument value="tdl"/>
+                    		 <argument value="${tdlinr}"/>
+                    		 <argument value="${LevyNo[i]}"/>         <!-- ???申报号码 -->
+                    		 <argument value="#{BASSTA}"/>
+                    		 <argument value=""/>
+                    		 <argument value=""/>
+                    		 <argument value="${bchinr}"/>
+                    		 <argument value=""/>
+                    		 <argument value=""/>
+                    		 <argument value="${formatNow('yyyy-MM-dd HH:mm:ss')}"/>
+                    		 <argument value="${formatNow('yyyy-MM-dd HH:mm:ss')}"/>
+                    		 <argument value=""/>  <!-- ???临时申报流水号  -->
+                    		 <argument value=""/>
+                    		 <argument value=""/>
+                    		 <argument value="#{SNDFLG}"/> 
+                    		 <argument value="K"/>
+                    		 <argument value=""/>
+                    		 <argument value=""/>
+                    		 <argument value=""/>
+                    		 <argument value=""/>
+                    		 <argument value="*"/>
+                    	</field>
+                    </foreach>
+                    <field etag="commit"/>
+                </filter>
+                <filter ref="publicFilter" type="in">
+                    <call interfaceName="SC_Loadctl" transactionName="SC_Loadctl" type="chain">
+                        <argument value="0000" description="上述入库操作执行成功返回0000"/>
+                        <argument value="${rsize}" description="已入库的数据条数"/>
+                        <argument value="${filepath}" description="文件路径 用以取ctl文件中的条数"/>
+                        <argument value="O_M13_TDL" description="接口名"/>
+                    </call>
+                </filter>
+            </step>
+
+            <step id="exception" >
+                <filter ref="publicFilter" type="in">
+                    <call interfaceName="SC_Loadctl" transactionName="SC_Loadctl" type="chain">
+                        <argument value="9999" description="上述入库操作执行失败9999"/>
+                        <argument value="0" description="已入库的数据条数 接口一旦出错，程序会rollback"/>
+                        <argument value="${filepath}" description="文件路径 用以取ctl文件中的条数"/>
+                        <argument value="O_M13_TDL" description="接口名"/>
+                    </call>
+                </filter>
+            </step>
+
+        </transaction>
+
+    </interface>
+
+
+</root>

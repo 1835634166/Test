@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<root xmlns="http://www.brilliance.com.cn/interface" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://www.brilliance.com.cn/interface ../etc/schema/interface.xsd">
+
+
+    <interface id="xindai_fc" type="server" version="2.0" defaultScope="transaction">
+
+        <transaction id="xindai_fc" version="2.0">
+            <step id="1">
+                <filter type="in" ref="publicFilter">
+                    <field tag="ownref" value="${this[0][0]}" scope="transaction"/>
+                    <field tag="objtyp" value="${this[0][1]}" scope="transaction"/>
+                </filter>
+                <filter type="in" ref="publicFilter">
+                    <call tag="sql" interfaceName="xindai_fcsql" transactionName="${objtyp}" type="sub"/>
+                    <field tag="sql" value="${sql.content}"/>
+                </filter>
+
+                <connection ref="jdbcConnection" type="in"/>
+                <filter ref="sqlFilter" type="in">
+                    <field tag="tmp" etag="${sql}" type="LST">
+                        <argument value="${ownref}"/>
+                    </field>
+                </filter>
+                <if condition="${tmp.size()>0}">
+
+                    <filter ref="sqlFilter" type="in">
+                        <field tag="TRNTYP"    value="${tmp[0]['TRNTYP']}"     description=""/>
+                        <field tag="LOANNO"    value="${tmp[0]['LOANNO']}"     description=""/>
+                        <field tag="SEQNO"     value="${tmp[0]['SEQNO']}"      description=""/>
+                        <field tag="CISNO"     value="${tmp[0]['CISNO']}"      description=""/>
+                        <field tag="CPLDAT"    value="${tmp[0]['CPLDAT']}"     description=""/>
+                        <field tag="ZONENO"    value="${tmp[0]['ZONENO']}"     description=""/>
+                        <field tag="BRNO"      value="${tmp[0]['BRNO']}"       description=""/>
+                        <field tag="TRNINR"    value="${tmp[0]['TRNINR']}"     description=""/>
+                        <field tag="OWNREF"    value="${tmp[0]['OWNREF']}"     description=""/>
+                        <field tag="PNTOWNREF" value="${tmp[0]['PNTOWNREF']}"  description=""/>
+                        <field tag="CHDOWNREF" value="${tmp[0]['CHDOWNREF']}"  description=""/>
+                        <field tag="OPNDAT"    value="${tmp[0]['OPNDAT']}"     description=""/>
+                        <field tag="EXPDAT"    value="${tmp[0]['EXPDAT']}"     description=""/>
+                        <field tag="MAXCUR"    value="${tmp[0]['MAXCUR']}"     description=""/>
+                        <field tag="MAXAMT"    value="${tmp[0]['MAXAMT']}"     description=""/>
+                        <field tag="OPNCUR"    value="${tmp[0]['OPNCUR']}"     description=""/>
+                        <field tag="OPNAMT"    value="${tmp[0]['OPNAMT']}"     description=""/>
+                        <field tag="UTLCUR"    value="${tmp[0]['UTLCUR']}"     description=""/>
+                        <field tag="UTLAMT"    value="${tmp[0]['UTLAMT']}"     description=""/>
+                        <field tag="EXTID"     value="${tmp[0]['EXTID']}"      description=""/>
+                        <field tag="TENMAXDAY" value="${tmp[0]['TENMAXDAY']}"  description=""/>
+                        <field tag="REF1"      value="${tmp[0]['REF1']}"       description=""/>
+                        <field tag="REF2"      value="${tmp[0]['REF2']}"       description=""/>
+                        <field tag="ACC1"      value="${tmp[0]['ACC1']}"       description=""/>
+                        <field tag="TYP1"      value="${tmp[0]['TYP1']}"       description=""/>
+                        <field tag="CRYCOD"    value="${tmp[0]['CRYCOD']}"     description=""/>
+                        <field tag="SNDCNT"    value="${tmp[0]['SNDCNT']}"     description=""/>
+                        <field tag="STA"       value="${tmp[0]['STA']}"        description=""/>
+                        <field tag="EXGRAT"    value="${tmp[0]['EXGRAT']}"     description=""/>
+                        <field tag="INFTXT"    value="${tmp[0]['INFTXT']}"     description=""/>
+                        <field tag="TRNFLG"    value="${tmp[0]['TRNFLG']}"     description=""/>
+                        <field tag="TRNSEQINR" value="${tmp[0]['TRNSEQINR']}"  description=""/>
+                        <field tag="SEQINR"    value="${tmp[0]['SEQINR']}"     description=""/>
+                        <field tag="date"    value="${formatNow('yyyyMMdd')}"     description=""/>
+                        <field tag="date1"    value="xd${date}"     description=""/>
+                        <field tag="lsh"    value="${__this.getCNTinr1('date1',4)}"     description=""/>
+
+                        <field tag="SEQINR"    value="${ZONENO}${date}${lsh}"     description=""/>
+
+
+                    </filter>
+
+
+                    <!-- 组装保证金账户信息查询报文 -->
+                    <filter tag="requestXml" scope="step" ref="xmlFilter" type="out" encoding="UTF-8">
+
+
+
+                        <field etag="CM2002.pub.TransNo" value="20001"/>
+                        <field etag="CM2002.pub.AuthId" value="AuthId"/>
+                        <field etag="CM2002.pub.VerifyStr" value=""/>
+                        <field etag="CM2002.pub.AreaCode" value="AreaCode"/>
+                        <field etag="CM2002.pub.SerialNo" value="SerialNo"/>
+                        <field etag="CM2002.pub.TransDate" value="${now()}"/>
+                        <field etag="CM2002.pub.SysID" value="08"/>
+                        <field etag="CM2002.in.TRNTYP" value="${TRNTYP}"/>
+                        <field etag="CM2002.in.LOANNO" value="${LOANNO}"/>
+                        <field etag="CM2002.in.SEQNO" value="${SEQNO}"/>
+                        <field etag="CM2002.in.CISNO" value="${CISNO}"/>
+                        <field etag="CM2002.in.CPLDAT" value="${CPLDAT}"/>
+                        <field etag="CM2002.in.ZONENO" value="${ZONENO}"/>
+                        <field etag="CM2002.in.BRNO" value="${BRNO}"/>
+                        <field etag="CM2002.in.TRNINR" value="${TRNINR}"/>
+                        <field etag="CM2002.in.OWNREF" value="${OWNREF}"/>
+                        <field etag="CM2002.in.PNTOWNREF" value="${PNTOWNREF}"/>
+                        <field etag="CM2002.in.CHDOWNREF" value="${CHDOWNREF}"/>
+                        <field etag="CM2002.in.OPNDAT" value="${OPNDAT}"/>
+                        <field etag="CM2002.in.EXPDAT" value="${EXPDAT}"/>
+                        <field etag="CM2002.in.MAXCUR" value="${MAXCUR}"/>
+                        <field etag="CM2002.in.MAXAMT" value="${MAXAMT}"/>
+                        <field etag="CM2002.in.OPNCUR" value="${OPNCUR}"/>
+                        <field etag="CM2002.in.OPNAMT" value="${OPNAMT}"/>
+                        <field etag="CM2002.in.UTLCUR" value="${UTLCUR}"/>
+                        <field etag="CM2002.in.UTLAMT" value="${UTLAMT}"/>
+                        <field etag="CM2002.in.EXTID" value="${EXTID}"/>
+                        <field etag="CM2002.in.TENMAXDAY" value="${TENMAXDAY}"/>
+                        <field etag="CM2002.in.REF1" value="${REF1}"/>
+                        <field etag="CM2002.in.REF2" value="${REF2}"/>
+                        <field etag="CM2002.in.ACC1" value="${ACC1}"/>
+                        <field etag="CM2002.in.TYP1" value="${TYP1}"/>
+                        <field etag="CM2002.in.CRYCOD" value="${CRYCOD}"/>
+                        <field etag="CM2002.in.SNDCNT" value="${SNDCNT}"/>
+                        <field etag="CM2002.in.STA" value="${STA}"/>
+                        <field etag="CM2002.in.EXGRAT" value="${EXGRAT}"/>
+                        <field etag="CM2002.in.INFTXT" value="${INFTXT}"/>
+                        <field etag="CM2002.in.TRNFLG" value="${TRNFLG}"/>
+                        <field etag="CM2002.in.TRNSEQINR" value="${TRNSEQINR}"/>
+                        <field etag="CM2002.in.SEQINR" value="${SEQINR}"/>
+                    </filter>
+
+                </if>
+                <else>
+
+                    <!-- 组装保证金账户信息查询报文 -->
+                    <filter tag="requestXml" scope="step" ref="xmlFilter" type="out" encoding="UTF-8">
+
+
+
+                        <field etag="CM2002.pub.TransNo" value="20001"/>
+                        <field etag="CM2002.pub.AuthId" value="----"/>
+                        <field etag="CM2002.pub.VerifyStr" value=""/>
+                        <field etag="CM2002.pub.AreaCode" value="----"/>
+                        <field etag="CM2002.pub.SerialNo" value="---"/>
+                        <field etag="CM2002.pub.TransDate" value="${now()}"/>
+
+                    </filter>
+
+                </else>
+                
+
+
+
+                <!-- 发送给信贷并接收返回报文 -->
+                <import file="#{COMMONIMPORT}" ref="connectxdHttpReturn"/>
+
+            </step>
+            <step id="exception">
+                <import file="#{COMMONIMPORT}" ref="commonException"/>
+            </step>
+        </transaction>
+    </interface>
+
+
+</root>

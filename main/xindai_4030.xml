@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<root xmlns="http://www.brilliance.com.cn/interface" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://www.brilliance.com.cn/interface ../etc/schema/interface.xsd">
+
+    <!-- 信贷退回接口 -->
+    <interface id="xindai_4030" type="server" version="2.0" defaultScope="transaction">
+
+        <transaction id="xindai_4030" version="2.0">
+            <step id="1">
+                <!-- 解析信贷请求信息 -->
+                <filter type="in" ref="publicFilter">
+                    <field tag="transcode" value="${this[0][0]}" scope="transaction" description="交易代码"/>
+                    <field tag="jiejuh" value="${this[0][1]}"    scope="transaction" description="借据号"/>
+                    <field tag="seqno" value="${this[0][2]}"     scope="transaction" description="借据号"/>
+                    <field tag="kehuh" value="${this[0][3]}"     scope="transaction" description="客户号"/>
+                    <field tag="branch" value="${this[0][4]}"    scope="transaction" description="机构号"/>
+                    <field tag="yewlex" value="${this[0][5]}"    scope="transaction" description="业务类型"/>
+
+                </filter>
+
+                <connection ref="jdbcConnection" type="in"/>
+                <filter ref="sqlFilter" type="in">
+
+                    <field tag="rs" etag="select sta,binsta,ordinr from bin where CDTREF = ? and sta='N'" type="LST">
+                        <argument value="${jiejuh}"/>
+                    </field>
+
+                    <field tag="hasBin" value="${rs.size()>0?true:false}"/>
+                    <if condition="${hasBin}">
+                        <field tag="sta" value="${rs[0]['sta']}"/>
+                        <field tag="binsta" value="${rs[0]['binsta']}"/>
+                        <if condition="${binsta=='Y'}">
+                            <field tag="respCode" value="0003" scope="transaction" description="应答代码"/>
+                            <field tag="respContent" value="该借据号的业务已绑定，无法退回" scope="transaction" description="应答信息"/>
+                        </if>
+                        <else>
+                            <field tag="spts" etag="select inr from spt where objref = ?">
+                                <argument value="${jiejuh}"/>
+                            </field>
+                            <field tag="sptinr" value="${spts[0]['inr']}"/>
+
+                            <field tag="lckstr" value="SPT   ${sptinr}"/>
+                            <field tag="lcks" etag="select * from lck where lckstr = ?">
+                                <argument value="${lckstr}"/>
+                            </field>
+                            <field tag="haslck" value="${lcks.size()>0?true:false}"/>
+                            <if condition="haslck">
+                                <field tag="respCode" value="0001" scope="transaction" description="应答代码"/>
+                                <field tag="respContent" value="业务目前被锁定，无法退回" scope="transaction" description="应答信息"/>
+                            </if>
+                            <else>
+
+                                <field etag="update bin set sta = 'R' where CDTREF=?">
+                                    <argument value="${keyCode}"/>
+                                </field>
+                                <field etag="update spt set delflg= 'X' where ordinr = ?">
+                                    <argument value="${rs[0]['ordinr']}"/>
+                                </field>
+                                <field etag="commit"/>
+                                <field tag="respCode" value="0000" scope="transaction" description="应答代码"/>
+                                <field tag="respContent" value="交易成功" scope="transaction" description="应答信息"/>
+                            </else>
+
+                        </else>
+                    </if>
+                    <else>
+                        <field tag="respCode" value="0001" scope="transaction" description="应答代码"/>
+                        <field tag="respContent" value="不存在该借据号的业务" scope="transaction" description="应答信息"/>
+                    </else>
+
+                </filter>
+                <import file="#{COMMONIMPORT}" ref="sendXinDaiCommonPackage"/>
+
+            </step>
+
+            <step id="exception">
+                <filter type="in" ref="publicFilter">
+                    <field tag="respCode" value="9999" scope="transaction" description="应答代码"/>
+                    <field tag="respContent" value="${super.description}" scope="transaction" description="应答信息"/>
+                </filter>
+                <!--  交易失败返回报文 -->
+                <import file="#{COMMONIMPORT}" ref="sendXinDaiCommonPackage"/>
+            </step>
+        </transaction>
+
+    </interface>
+</root>

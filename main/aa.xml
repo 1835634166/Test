@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<root xmlns="http://www.brilliance.com.cn/interface"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://www.brilliance.com.cn/interface ../etc/schema/interface.xsd">
+
+    <!-- 活期储蓄转账业务/对公活期销户 -->
+    <interface id="aa" type="server" version="2.0" defaultScope="transaction">
+
+        <transaction id="aa" version="2.0">
+            <step id="1">
+                <filter ref="coreSplitFilter" type="out">
+
+                    <field etag="0" value="1111"/>
+                    <field etag="1" value="1111"/>
+                    <field etag="2" value="1111"/>
+                    <field etag="3" value="1111"/>
+                    <field etag="4" value="1111"/>
+                    <field etag="5" value="1111"/>
+                    <field etag="6" value="1111"/>
+                </filter>
+                <filter ref="ctlSplitFilter" type="out">
+                    <field etag="0" value="1111"/>
+                    <field etag="1" value="2222"/>
+                    <field etag="2" value="3333"/>
+                    <field etag="3" value="4444"/>
+                    <field etag="4" value="5555"/>
+                    <field etag="4" value="6666"/>
+                </filter>
+
+
+
+
+
+                <filter ref="publicFilter" type="in">
+                    <log value="${this}"/>
+                    <call interfaceName="xindaiyw" transactionName="tmp" type="chain">
+                        <argument value="123" description="branch"/>
+                        <argument value="123" description="keycode"/>
+                        <argument value="123"  description="extendKeyCode"/>
+                        <argument value="123"  description="payInteOutCustId"/>
+                        <argument value="123"    description="yewlex"/>
+                        <argument value="123"    description="crelex"/>
+                        <argument value="123"    description="credNo"/>
+                        <argument value="123"    description="bzjact"/>
+                        <argument value="123"    description="bzjcur"/>
+                        <argument value="123"    description="bzjamt"/>
+                        <argument value="123"    description="msgid"/>
+                        <argument value="${this}"    description="yewstr"/>
+
+
+                    </call>
+                </filter>
+
+
+            </step>
+        </transaction>
+
+
+    </interface>
+
+
+</root>

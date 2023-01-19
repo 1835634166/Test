@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<root xmlns="http://www.brilliance.com.cn/interface" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://www.brilliance.com.cn/interface ../etc/schema/interface.xsd">
+
+    <!-- 国结保证金退款-->
+    <interface id="core_IQ12" type="server" version="2.0" defaultScope="transaction">
+
+        <transaction id="core_IQ12" version="2.0">
+            <step id="1">
+                <filter type="in" ref="publicFilter">
+
+
+                    <field tag="bwnlsh"   value="${this[0][0]}" scope="transaction" description="报文流水"/>
+                    <field tag="trancod"  value="${this[0][1]}" scope="transaction" description="交易代码"/>
+                    <field tag="msgid"    value="${this[0][2]}" scope="transaction" description="信贷流水号"/>
+                    <field tag="jiejuh"   value="${this[0][3]}" scope="transaction" description="借据号"/>
+                    <field tag="cur"      value="${this[0][4]}" scope="transaction" description="币种"/>
+                    <field tag="yewlex"   value="${this[0][5]}" scope="transaction" description="业务类型"/>
+                    <field tag="specde"   value="${this[0][6]}" scope="transaction" description="特殊处理"/>
+                    <field tag="amt"      value="${this[0][7]}" scope="transaction" description="退款金额"/>
+                    <field tag="act"      value="${this[0][8]}" scope="transaction" description="转入账号"/>
+                    <field tag="actnam"   value="${this[0][9]}" scope="transaction" description="转入户名"/>
+                    <field tag="actlex"   value="${this[0][10]}" scope="transaction" description="转入账号类型"/>
+                    <field tag="yewdat"   value="${this[0][11]}" scope="transaction" description="业务日期"/>
+                    <field tag="jzguyu"   value="${this[0][12]}" scope="transaction" description="记账柜员"/>
+                    <field tag="jaoyig"   value="${this[0][13]}" scope="transaction" description="交易机构"/>
+                </filter>
+             <!--                组装发往核心报文-->
+                <filter type="out" ref="coreSplitFilter" encoding="#{ENCODING}">
+                    <field value="${bwnlsh}"   description="报文流水"/>
+                    <field value="${trancod}"    description="交易代码"/>
+                    <field value="${msgid}"    description="信贷流水号"/>
+                    <field value="${jiejuh}"    description="借据号"/>
+                    <field value="${cur}"       description="币种"/>
+                    <field value="${yewlex}"    description="业务类型"/>
+                    <field value="${specde}"    description="特殊处理"/>
+                    <field value="${amt}"       description="退款金额"/>
+                    <field value="${act}"       description="转入账号"/>
+                    <field value="${actnam}"    description="转入户名"/>
+                    <field value="${actlex}"    description="转入账号类型"/>
+                    <field value="${yewdat}"    description="业务日期"/>
+                    <field value="${jzguyu}"    description="记账柜员"/>
+                    <field value="${jaoyig}"    description="交易机构"/>
+                </filter>
+
+                <!-- 发送给核心并接收返回报文 -->
+                <import file="#{COMMONIMPORT}" ref="connectCoreAndReturn"/>
+
+                <!-- 解析返回报文 -->
+                <filter type="in" ref="coreSplitFilter" encoding="#{ENCODING}">
+                    <field tag="responseCode" etag="0" description="响应码"/>
+                    <field tag="reason" etag="1" description="错误原因"/>
+                </filter>
+
+                <filter type="out" ref="splitFilter" encoding="#{ENCODING}">
+                    <field value="${responseCode}"/>
+                    <field value="${reason}"/>
+                </filter>
+            </step>
+            <step id="exception">
+                <import file="#{COMMONIMPORT}" ref="commonException"/>
+            </step>
+        </transaction>
+    </interface>
+
+
+</root>

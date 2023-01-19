@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<root xmlns="http://www.brilliance.com.cn/interface"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://www.brilliance.com.cn/interface ../etc/schema/interface.xsd">
+
+    <!-- 从核心下载过来的各类型业务处理 -->
+    <interface id="xindaiyw" type="server" version="2.0" defaultScope="transaction">
+
+        <transaction id="tmp" version="2.0">
+            <step id="1">
+                <filter ref="publicFilter" type="in">
+                    <field tag="branch" value="${this[0]}" description="机构号"/>
+                    <field tag="keycode" value="${this[1]}" description="借据号"/>
+                    <field tag="extendKeyCode" value="${this[2]}" description="合同号"/>
+                    <field tag="payInteOutCustId" value="${this[3]}" description="客户号"/>
+                    <field tag="yewlex" value="${this[4]}" description="国结业务类型"/>
+                    <field tag="crelex" value="${this[5]}" description="准贷证类型"/>
+                    <field tag="credNo" value="${this[6]}" description="准贷证序号"/>
+                    <field tag="bzjact" value="${this[7]}" description="保证金账号"/>
+                    <field tag="bzjcur" value="${this[8]}" description="保证金币种"/>
+                    <field tag="bzjamt" value="${this[9]}" description="保证金金额"/>
+                    <field tag="msgid" value="${this[10]}" description="报文标识号"/>
+                    <field tag="yewstr" value="${this[11]}" description="具体业务信息" scope="this"/>
+
+                </filter>
+                <filter ref="newxindaisplitFilter" type="in">
+                    <field tag="subBusicodeType" etag="0" description="业务品种"/>
+                    <field tag="remitterAccount" etag="1"/>
+                    <field tag="startDate" etag="2"/>
+                    <field tag="moneyCur" etag="3"/>
+                    <field tag="contractMoney" etag="4"/>
+                    <field tag="SETTYP" etag="5" description="结息方式"/>
+                </filter>
+
+
+                <connection ref="jdbcConnection" type="in"/>
+                <filter ref="sqlFilter" type="in">
+
+
+                        <!-- 判断机构号是否在国结存在 -->
+                        <field tag="bchs" etag="select INR from bch where BRANCH=?" type="LST">
+                            <argument value="${branch}"/>
+                        </field>
+                        <field tag="hasbch" value="${bchs.size()>0?true:false}"/>
+                        <!-- 判断业务品种是否在国结存在 -->
+                        <field tag="stbs" etag="select COD from stb where TBL='BINFIN' AND UIL='EN' AND COD=?"
+                               type="LST">
+                            <argument value="${subBusicodeType}"/>
+                        </field>
+                        <field tag="hasstb" value="${stbs.size()>0?true:false}"/>
+                        <!-- 判断客户号是否在国结存在 -->
+                        <field tag="ptys" etag="select inr from pty where extkey=?" type="LST">
+                            <argument value="${payInteOutCustId}"/>
+                        </field>
+                        <field tag="hasPty" value="${ptys.size()>0?true:false}"/>
+                        <!-- 判断借据号是否已存在 -->
+                        <field tag="rs" etag="select inr from bin where CDTREF = ? and sta &lt;> 'R'" type="LST">
+                            <argument value="${keycode}"/>
+                        </field>
+                        <field tag="hasBin" value="${rs.size()>0?true:false}"/>
+                        <!-- 判断账号是否在国结存在，并且为该核心客户号下的账号 -->
+
+                        <if condition="${!hasbch}">
+                            <field tag="respCode" value="0009" scope="transaction" description="应答代码"/>
+                            <field tag="respContent" value="该机构号在国结不存在" scope="transaction" description="应答信息"/>
+                            <field tag="checkflag" value="${false}" description="校验标志"/>
+                        </if>
+                        <elseif condition="${!hasstb}">
+                            <field tag="respCode" value="0008" scope="transaction" description="应答代码"/>
+                            <field tag="respContent" value="该业务品种在国结不存在" scope="transaction" description="应答信息"/>
+                            <field tag="checkflag" value="${false}" description="校验标志"/>
+                        </elseif>
+                        <elseif condition="${!hasPty}">
+                            <field tag="respCode" value="0007" scope="transaction" description="应答代码"/>
+                            <field tag="respContent" value="该客户号在国结不存在" scope="transaction" description="应答信息"/>
+                            <field tag="checkflag" value="${false}" description="校验标志"/>
+                        </elseif>
+
+                        <elseif condition="${hasBin}">
+                            <field tag="respCode" value="0005" scope="transaction" description="应答代码"/>
+                            <field tag="respContent" value="已存在该借据号的业务" scope="transaction" description="应答信息"/>
+                            <field tag="checkflag" value="${false}" description="校验标志"/>
+                        </elseif>
+
+                        <if condition="${checkflag}">
+                            <field tag="cdainr" value="${__this.getSeqNextVal('COUCDA')}"/>
+                            <field tag="cdainr" value="${String:format('%08d',cdainr)}"/>
+                            <field tag="ordinr" value="${__this.getSeqNextVal('COUORD')}"/>
+                            <field tag="ordinr" value="${String:format('%08d', ordinr)}"/>
+                            <field tag="smhinr" value="${__this.getSeqNextVal('COUSMH')}"/>
+                            <field tag="smhinr" value="${String:format('%08d', smhinr)}"/>
+                            <field tag="now" value="${now()}"/>
+                            <field etag="insert into CDA(INR,FINTYP,OWNREF,OPNDAT,AMT,CUR,INCAMT,SETTYP,CREDATTIM) values(?,?,?,?,?,?,?,?,?)">
+                                <argument value="${cdainr}"/>
+                                <argument value="${subBusicodeType}"/>
+                                <argument value="${remitterAccount}"/>
+                                <argument value="${startDate}"/>
+                                <argument value="${creditLoanMoney}"/>
+                                <argument value="${moneyCur}"/>
+                                <argument value="${contractMoney}"/>
+                                <argument value="${SETTYP}"/>
+                                <argument value="${now}"/>
+                            </field>
+                            <field tag="ocrs"
+                                   etag="select inr from bch where etyextkey = 'JZBANK' and branch = ?"
+                                   type="LST">
+                                <argument value="${branch}"/>
+                            </field>
+                            <field tag="branchinr" value="${ocrs.size()>0?ocrs[0]['inr']:''}"/>
+                            <field etag="insert into BIN(INR,CDTREF,CONREF,CUSTNO,CUR,AMT,BINSTA,ETYEXTKEY,BRANCHINR,STA,FINTYP,ORITYP,CREDATTIM,OBJTYP,OBJINR,ORDINR) values(right(digits(nextval for COUBIN),8),?,?,?,?,?,'N','JZBANK',?,'N',?,?,'CRE',?,'CDA',?,?)">
+                                <argument value="${keyCode}"/>
+                                <argument value="${extendKeyCode}"/>
+                                <argument value="${payInteOutCustId}"/>
+                                <argument value="${moneyCur}"/>
+                                <argument value="${creditLoanMoney}"/>
+                                <argument value="${branchinr}"/>
+                                <argument value="${subBusicodeType}"/>
+                                <argument value="${tradeCode}"/>
+                                <argument value="${now}"/>
+                                <argument value="${cdainr}"/>
+                                <argument value="${ordinr}"/>
+                            </field>
+
+                            <field tag="ptas"
+                                   etag="select pta.inr,pty.bchkeyinr from pty,pta where pta.usg = 'MAA' and pty.inr = pta.ptyinr and pty.extkey = ?"
+                                   type="LST">
+                                <argument value="${payInteOutCustId}"/>
+                            </field>
+                            <field tag="bchkeyinr" value="${ptas.size()>0?ptas[0]['bchkeyinr']:branchinr}"/>
+                            <field tag="ptainr" value="${ptas.size()>0?ptas[0]['inr']:''}"/>
+                            <field tag="nam"
+                                   value="${trim(keyCode)}/${trim(payInteOutCustId)}/${moneyCur}${creditLoanMoney}"/>
+                            <field tag="nam" value="${leftStr(nam,'gbk',40,0)}"/>
+                            <field tag="extkey" value="NONREF/${moneyCur}${creditLoanMoney}"/>
+
+                            <field tag="stbrs" etag="select txt from stb where tbl='BINFIN' and uil='EN' and cod=?"
+                                   type="LST">
+                                <argument value="${subBusicodeType}"/>
+                            </field>
+                            <field tag="txt" value="${stbrs.size()>0?stbrs[0]['txt']:''}"/>
+
+
+                            <field etag="insert into ORD(INR,NAM,OBJTYP,PTAINR,EXTKEY,STA,INIDATTIM,STADATTIM,TARDATTIM,ETYEXTKEY) values(?,?,' ',?,?,'INC',?,?,?,'JZBANK')">
+                                <argument value="${ordinr}"/>
+                                <argument value="${nam}"/>
+                                <argument value="${ptainr}"/>
+                                <argument value="${extkey}"/>
+                                <argument value="${now}"/>
+                                <argument value="${now}"/>
+                                <argument value="${now}"/>
+                            </field>
+
+                            <field etag="insert into SMH(INR,OBJTYP,EXTKEY,CORTYP,MSGTYP,ETYEXTKEY,DIR) values(?,' ',?,'CRM',?,'JZBANK','&lt;')">
+                                <argument value="${smhinr}"/>
+                                <argument value="${extkey}"/>
+                                <argument value="CDA"/>
+                            </field>
+
+                            <field etag="insert into SPT(INR,OWNREF,OBJTYP,OBJNAM,DATTIM,FRM,STA,INFTXT,SMHINR,ORDINR,TARDATTIM,RELCUR,RELAMT,ETGEXTKEY,ETYEXTKEY,BCHKEYINR,BRANCHINR,DELFLG,HLDFLG,REGFLG,OWNUSG,OWNUSR,TXT) values(right(digits(nextval for COUSPT),8),?,'SGDGRP',?,?,'SGTOPN','INC',' ',?,?,?,?,?,'JZBANK','JZBANK',?,?,' ',' ',' ',' ',' ',?)">
+                                <argument value="${remitterAccount}"/>
+                                <argument value="${nam}"/>
+                                <argument value="${now}"/>
+                                <argument value="${smhinr}"/>
+                                <argument value="${ordinr}"/>
+                                <argument value="${now}"/>
+                                <argument value="${moneyCur}"/>
+                                <argument value="${creditLoanMoney}"/>
+                                <argument value="${branchinr}"/>
+                                <argument value="${bchkeyinr}"/>
+                                <argument value="${txt}"/>
+                            </field>
+                            <field etag="commit"/>
+                            <field tag="respCode" value="0000" scope="transaction" description="应答代码"/>
+                            <field tag="respContent" value="交易成功" scope="transaction" description="应答信息"/>
+                        </if>
+                </filter>
+
+
+            </step>
+        </transaction>
+
+
+    </interface>
+
+
+</root>

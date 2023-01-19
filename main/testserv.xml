@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<root xmlns="http://www.brilliance.com.cn/interface" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://www.brilliance.com.cn/interface ../etc/schema/interface.xsd">
+
+
+    <interface id="testserv" type="server" version="2.0" defaultScope="transaction">
+
+        <transaction id="testserv" version="2.0">
+            <step id="requestStep">
+                <filter type="in" ref="publicFilter">
+                    <log value="==============================信贷收报处理开始=============================="/>
+                    <field tag="request" value="${this[0]}"/>
+                    <field tag="response" value="${this[1]}"/>
+                    <field tag="msg" value="${IOUtils:toString(request.getInputStream(),'utf-8')}"/>
+                    <log value="测试：-------接收到一笔报文:${msg}"/>
+                    <field value="${msg}" scope="this"/>
+
+                </filter>
+
+
+                <filter type="out" ref="xmlFilter" encoding="UTF-8">
+                    <field etag="test.01" value="01" description="中文名称"/>
+                    <field etag="test.02" value="02" description="交易代码"/>
+                    <field etag="test.03" value="03" description="客户编号"/>
+                    <field etag="test.04" value="04" description="证书ID"/>
+                </filter>
+
+                <filter type="in" ref="publicFilter">
+                    <log value="${this}"/>
+                </filter>
+
+
+            </step>
+        </transaction>
+
+
+    </interface>
+
+
+</root>

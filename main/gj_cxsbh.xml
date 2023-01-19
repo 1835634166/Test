@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<root xmlns="http://www.brilliance.com.cn/interface"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://www.brilliance.com.cn/interface ../etc/schema/interface.xsd">
+
+    <!-- 国结要去查申报平台申报号 -->
+    <interface id="gj_cxsbh" type="server" version="2.0" defaultScope="transaction">
+
+        <transaction id="gj_cxsbh" version="2.0">
+            <step id="1">
+                <filter type="in" ref="publicFilter">
+
+                    <field tag="Type"               value="${this[0][0]}"  description="操作类型" />
+                    <field tag="LevyNo"                 value="${this[0][1]}"  description="申报号码" />
+                </filter>
+
+                <!-- 报送平台数据库连接 -->
+                <!-- 进行相应的数据库操作 -->
+                <connection ref="szsbJdbcConn" type="in"/>
+
+                <filter type="in" ref="sqlFilter">
+
+                    <if condition="${'2111'.equals(Type)}">
+                        <field tag="codes" etag="select levyno from tcc where levyno=?" type="LST">
+                            <argument value="${LevyNo}"/>
+                        </field>
+                        <if condition="${codes.size()>0}">
+                            <field tag="sta" value="0000"/>
+                        </if>
+                        <else>
+                            <field tag="sta" value="9999"/>
+                        </else>
+
+                    </if>
+                    <if condition="${'2112'.equals(Type)}">
+                        <field tag="codes" etag="select levyno from tcc where levyno=?" type="LST">
+                            <argument value="${LevyNo}"/>
+                        </field>
+                        <if condition="${codes.size()>0}">
+                            <field tag="sta" value="0000"/>
+                        </if>
+                        <else>
+                            <field tag="sta" value="9999"/>
+                        </else>
+                    </if>
+
+
+
+
+
+                </filter>
+
+                <filter type="out" ref="coreSplitFilter" encoding="#{ENCODING}">
+                    <field value="0000"/>
+                    <field value="${sta}"/>
+                </filter>
+            </step>
+
+            <step id="exception" >
+                <filter type="out" ref="coreSplitFilter" encoding="#{ENCODING}">
+                    <field value="9999"/>
+                    <field value="处理失败"/>
+                </filter>
+
+            </step>
+        </transaction>
+
+
+    </interface>
+
+
+</root>

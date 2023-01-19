@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<root xmlns="http://www.brilliance.com.cn/interface" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://www.brilliance.com.cn/interface ../etc/schema/interface.xsd">
+
+    <!-- 准贷证下载，分自动手动-->
+    <interface id="core_IQ11" type="server" version="2.0" defaultScope="transaction">
+
+        <transaction id="core_IQ11" version="2.0">
+            <step id="1">
+                <filter type="in" ref="publicFilter">
+                    <!--                    <import file="#{COMMONIMPORT}" ref="coreParseHeader"/>-->
+                    <field tag="msgseq" value="${this[0][0]}" scope="transaction" description="报文流水号"/>
+                    <field tag="trancode" value="${this[0][1]}" scope="transaction" description="交易码"/>
+                    <field tag="dowmth" value="${this[0][2]}" scope="transaction" description="下载方式"/>
+                    <field tag="louno" value="${this[0][3]}" scope="transaction" description="借据号"/>
+                    <field tag="yewdat" value="${this[0][4]}" scope="transaction" description="业务日期"/>
+                    <field tag="guiyun" value="${this[0][5]}" scope="transaction" description="柜员号"/>
+                    <field tag="jyjigo" value="${this[0][6]}" scope="transaction" description="交易机构"/>
+                </filter>
+                <!-- 组装保证金账户信息查询报文 -->
+                <filter type="out" ref="coreSplitFilter" encoding="#{ENCODING}">
+                    <field value="${msgseq}" description="报文流水号"/>
+                    <field value="${isEmpty(trancode)?'IQ11':trancode}" description="交易码"/>
+                    <field value="${dowmth}" description="下载方式"/>
+                    <field value="${louno}" description="借据号"/>
+                    <field value="${yewdat}" description="业务日期"/>
+                    <field value="${guiyun}" description="柜员号"/>
+                    <field value="${jyjigo}" description="交易机构"/>
+                </filter>
+
+                <!-- 发送给核心并接收返回报文 -->
+                <import file="#{COMMONIMPORT}" ref="connectCoreAndReturn"/>
+
+                <!-- 解析返回报文 -->
+                <filter type="in" ref="coreSplitFilter" encoding="#{ENCODING}">
+                    <field tag="responseCode" etag="0" description="响应码"/>
+                    <field tag="responseMsg" etag="1" description="响应码"/>
+                    <if condition="${responseCode=='0000'}">
+                        <field tag="cycleIndex" etag="2" description="循环次数" type="int"/>
+                        <foreach tag="i" end="${cycleIndex}">
+                            <field tag="branch[${i}]" etag="${3+i*14}" description="机构号"/>
+                            <field tag="jiejuh[${i}]" etag="${4+i*14}" description="借据号"/>
+                            <field tag="contah[${i}]" etag="${5+i*14}" description="合同号"/>
+                            <field tag="extkey[${i}]" etag="${6+i*14}" description="客户号"/>
+                            <field tag="yewlex[${i}]" etag="${7+i*14}" description="国结业务类型"/>
+                            <field tag="crelex[${i}]" etag="${8+i*14}" description="准贷证类型"/>
+                            <field tag="credNo[${i}]" etag="${9+i*14}" description="准贷证序号"/>
+                            <field tag="bzjact[${i}]" etag="${10+i*14}" description="保证金账号"/>
+                            <field tag="bzjcur[${i}]" etag="${11+i*14}" description="保证金币种"/>
+                            <field tag="bzjamt[${i}]" etag="${12+i*14}" description="保证金金额"/>
+                            <field tag="msgid[${i}]" etag="${13+i*14}" description="报文唯一标识号"/>
+                            <field tag="yewstr1[${i}]" etag="${14+i*14}" description="国结准贷证业务信息1"/>
+                            <field tag="yewstr2[${i}]" etag="${15+i*14}" description="国结准贷证业务信息2"/>
+                            <field tag="yewstr3[${i}]" etag="${16+i*14}" description="国结准贷证业务信息3"/>
+                        </foreach>
+                    </if>
+                    <else>
+                        <field tag="reason" etag="1" description="错误原因"/>
+                        <field tag="remark" etag="2" description="备注 "/>
+                    </else>
+                </filter>
+
+                <if condition="${responseCode=='0000'}">
+                    <filter ref="publicFilter" type="in">
+                        <foreach tag="i" end="${cycleIndex}">
+                            <field tag="_branch" value="${branch[i]}" description="机构号"/>
+                            <field tag="_jiejuh" value="${jiejuh[i]}" description="借据号"/>
+                            <field tag="_contah" value="${contah[i]}" description="合同号"/>
+                            <field tag="_extkey" value="${extkey[i]}" description="客户号"/>
+                            <field tag="_yewlex" value="${yewlex[i]}" description="国结业务类型"/>
+                            <field tag="_crelex" value="${crelex[i]}" description="准贷证类型"/>
+                            <field tag="_credNo" value="${credNo[i]}" description="准贷证序号"/>
+                            <field tag="_bzjact" value="${bzjact[i]}" description="保证金账号"/>
+                            <field tag="_bzjcur" value="${bzjcur[i]}" description="保证金币种"/>
+                            <field tag="_bzjamt" value="${bzjamt[i]}" description="保证金金额"/>
+                            <field tag="_msgid" value="${msgid[i]}" description="报文唯一标识号"/>
+                            <field tag="_yewstr" value="${yewstr1[i]}${yewstr2[i]}${yewstr3[i]}"
+                                   description="国结准贷证业务信息"/>
+
+                            <call interfaceName="xindaiyw_${_crelex}" transactionName="xindaiyw_${_crelex}" type="chain">
+                                <argument value="${_branch}"/>
+                                <argument value="${_jiejuh}"/>
+                                <argument value="${_contah}"/>
+                                <argument value="${_extkey}"/>
+                                <argument value="${_yewlex}"/>
+                                <argument value="${_crelex}"/>
+                                <argument value="${_credNo}"/>
+                                <argument value="${_bzjact}"/>
+                                <argument value="${_bzjcur}"/>
+                                <argument value="${_bzjamt}"/>
+                                <argument value="${_msgid}"/>
+                                <argument value="${_yewstr}"/>
+                            </call>
+                        </foreach>
+                    </filter>
+
+
+                    <!-- 正常响应国结 -->
+                    <filter type="out" ref="splitFilter" encoding="#{ENCODING}">
+                        <field value="${responseCode}"/>
+
+
+                    </filter>
+                </if>
+                <else>
+                    <!--                    异常响应国结-->
+                    <filter type="out" ref="splitFilter" encoding="#{ENCODING}">
+                        <field value="${responseCode}"/>
+                        <field value="${responseMsg}"/>
+
+                    </filter>
+                </else>
+            </step>
+            <step id="exception">
+                <import file="#{COMMONIMPORT}" ref="commonException"/>
+            </step>
+        </transaction>
+    </interface>
+
+
+</root>

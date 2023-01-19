@@ -1,0 +1,616 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<root xmlns="http://www.brilliance.com.cn/interface"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://www.brilliance.com.cn/interface ../etc/schema/interface.xsd">
+
+    <!-- 实时反传的sql定义在这里 -->
+    <interface id="xindai_fcsql" type="server" version="2.0" defaultScope="transaction">
+
+        <transaction id="302" version="2.0">
+            <step id="1">
+                <filter ref="publicFilter" type="in">
+                    <field tag="sql" value="select
+'302' trntyp     ,
+cda.cdtref loanno     ,
+cda.cdtref seqno      ,
+pta.beizhu1 cisno      ,
+to_Char(trn.comdat,'yyyymmdd')  cpldat     ,
+'000'||substr(bch.branch,1,1) zoneno     ,
+substr(bch.branch,2,4)  brno       ,
+trn.inr trninr     ,
+gid.ownref ownref     ,
+'' pntownref  ,
+'' chdownref  ,
+to_Char(gid.orddat,'yyyymmdd') opndat     ,
+to_Char(gid.expdat,'yyyymmdd') expdat     ,
+cbb.cur maxcur     ,
+cbb.amt maxamt     ,
+'' opncur     ,
+'' opnamt     ,
+'' utlcur     ,
+'' utlamt     ,
+'' extid      ,
+'' tenmaxday  ,
+'' ref1       ,
+'' ref2       ,
+'' acc1       ,
+'N' typ1       ,
+'' crycod     ,
+'' sndcnt     ,
+'' sta        ,
+'' exgrat     ,
+'' inftxt     ,
+'0' trnflg
+
+from gid
+left join trn on trn.objtyp = 'GID' and trn.objinr = gid.inr
+left join cbb on cbb.objtyp = 'GID' and cbb.objinr = gid.inr
+left join bch on bch.inr = trn.bchkeyinr
+left join pts on pts.objtyp = 'GID' and pts.objinr = gid.inr and pts.rol='APL'
+left join pty on pty.inr = pts.ptyinr
+left join pta on pta.ptyinr = pty.inr
+left join cda on cda.ownref = gid.ownref
+where trn.inifrm = 'GITOPN'and trn.relflg in ('R','F')
+and cbb.cbc='MAXSUM'and cbb.extid='AMT1' and trn.inr=?" scope="this"/>
+                </filter>
+
+            </step>
+        </transaction>
+
+        <transaction id="305" version="2.0">
+            <step id="1">
+                <filter ref="publicFilter" type="in">
+                    <field tag="sql" value="select
+'305' trntyp     ,
+cda.cdtref loanno     ,
+cda.cdtref seqno      ,
+pta.beizhu1 cisno      ,
+to_Char(trn.comdat,'yyyymmdd')  cpldat     ,
+'000'||substr(bch.branch,1,1) zoneno     ,
+substr(bch.branch,2,4)  brno       ,
+trn.inr trninr     ,
+gcd.ownref ownref     ,
+gid.ownref pntownref  ,
+'' chdownref  ,
+to_char(gcd.opndat,'yyyymmdd') opndat     ,
+'' expdat     ,
+cbb.cur maxcur     ,
+cbb.amt maxamt     ,
+'' opncur     ,
+cbe.amt opnamt     ,
+'' utlcur     ,
+cbb.amt utlamt     ,
+'' extid      ,
+'' tenmaxday  ,
+'' ref1       ,
+cda.cshamt ref2       ,
+cbb.amt acc1       ,
+'' typ1       ,
+'' crycod     ,
+'' sndcnt     ,
+'' sta        ,
+'' exgrat     ,
+'' inftxt     ,
+'0' trnflg
+from gcd
+left join trn on trn.objtyp = 'GCD' and trn.objinr = gcd.inr
+left join gid on gcd.pnttyp = 'GID' and gcd.pntinr = gid.inr
+left join cbb on cbb.objtyp = 'GCD' and cbb.objinr = gcd.inr
+left join cbe on cbe.trninr = trn.inr
+left join bch on bch.inr = trn.bchkeyinr
+left join pts on pts.objtyp = 'GCD' and pts.objinr = gcd.inr and pts.rol='APL'
+left join pty on pty.inr = pts.ptyinr
+left join pta on pta.ptyinr = pty.inr
+left join cda on cda.ownref = gid.ownref
+where trn.inifrm = 'GITSET'and trn.relflg in ('R','F')
+and cbb.cbc='OPN'and cbb.extid='AMT1'and to_char(cbb.enddat,'yyyymmdd')&lt;>'22991231'
+and cbe.objtyp ='AVD' and trn.inr=?" scope="this"/>
+                </filter>
+
+            </step>
+        </transaction>
+
+        <transaction id="306" version="2.0">
+            <step id="1">
+                <filter ref="publicFilter" type="in">
+                    <field tag="sql" value="select
+'306' trntyp     ,
+cda.cdtref loanno     ,
+cda.cdtref seqno      ,
+pta.beizhu1 cisno      ,
+to_Char(trn.comdat,'yyyymmdd')  cpldat     ,
+'000'||substr(bch.branch,1,1) zoneno     ,
+substr(bch.branch,2,4)  brno       ,
+trn.inr trninr     ,
+gid.ownref ownref     ,
+'' pntownref  ,
+'' chdownref  ,
+'' opndat     ,
+'' expdat     ,
+'' maxcur     ,
+'' maxamt     ,
+'' opncur     ,
+cbb.amt opnamt     ,
+'' utlcur     ,
+'' utlamt     ,
+'' extid      ,
+'' tenmaxday  ,
+'' ref1       ,
+'' ref2       ,
+'' acc1       ,
+'' typ1       ,
+'' crycod     ,
+'' sndcnt     ,
+'' sta        ,
+'' exgrat     ,
+'' inftxt     ,
+'0' trnflg
+
+from gid
+left join trn on trn.objtyp = 'GID' and trn.objinr = gid.inr
+left join cbb on cbb.objtyp = 'GID' and cbb.objinr = gid.inr
+left join bch on bch.inr = trn.bchkeyinr
+left join pts on pts.objtyp = 'GID' and pts.objinr = gid.inr and pts.rol='APL'
+left join pty on pty.inr = pts.ptyinr
+left join pta on pta.ptyinr = pty.inr
+left join cda on cda.ownref = gid.ownref
+where trn.inifrm = 'GITCAN'and trn.relflg in ('R','F')
+and cbb.cbc='OPN'and cbb.extid='AMT1'and to_char(cbb.enddat,'yyyymmdd')&lt;>'22991231' and trn.inr=?
+
+" scope="this"/>
+                </filter>
+
+            </step>
+        </transaction>
+
+        <transaction id="001" version="2.0">
+            <step id="1">
+                <filter ref="publicFilter" type="in">
+                    <field tag="sql" value="select
+'001' trntyp,
+cda.cdtref loanno,
+cda.cdtref seqno,
+pta.beizhu1 cisno,
+to_Char(sysdate,'yyyymmdd')  cpldat     ,
+'000'||substr(bch.branch,1,1) zoneno     ,
+substr(bch.branch,2,4)  brno       ,
+trn.inr trninr     ,
+lid.ownref ownref     ,
+'' pntownref  ,
+'' chdownref  ,
+to_Char(lid.opndat,'yyyymmdd') opndat     ,
+to_Char(lid.expdat,'yyyymmdd') expdat     ,
+cbb1.cur maxcur     ,
+cbb1.amt+cbb3.amt maxamt     ,
+'' opncur     ,
+cbb2.amt opnamt     ,
+'' utlcur     ,
+'' utlamt     ,
+'' extid      ,
+lid.tenmaxday tenmaxday  ,
+cda.conref ref1       ,
+'' ref2       ,
+'' acc1       ,
+'2' typ1       ,
+lid.stacty crycod     ,
+'' sndcnt     ,
+case lid.avbby when 'P' then 0 when 'N' then 1 when 'D' then 2 when 'A' then 3 else 4 end as sta        ,
+lid.nomtop exgrat     ,
+bopcty.txt inftxt     ,
+'0' trnflg     ,
+'' trnseqinr  ,
+'' seqinr
+from lid
+left join trn on trn.objtyp = 'LID' and trn.objinr = lid.inr
+left join cbb cbb1 on cbb1.objtyp = 'LID' and cbb1.objinr = lid.inr
+left join cbb cbb2 on cbb2.objtyp = 'LID' and cbb2.objinr = lid.inr
+left join cbb cbb3 on cbb3.objtyp = 'LID' and cbb3.objinr = lid.inr
+left join bch on bch.inr = trn.bchkeyinr
+left join pts on pts.objtyp = 'LID' and pts.objinr = lid.inr and pts.rol='APL'
+left join pty on pty.inr = pts.ptyinr
+left join pta on pta.ptyinr = pty.inr and pta.bchkeyinr=pty.bchkeyinr
+left join cda on cda.ownref = lid.ownref
+left join bopcty on bopcty.cod = lid.stacty
+where trn.inifrm = 'LITOPN'
+and trn.relflg in ('R','F')
+and cbb1.cbc='MAXSUM' and cbb1.extid='AMT1' and to_char(cbb1.enddat,'yyyymmdd')='22991231'
+and cbb2.cbc='NOMSUM' and cbb2.extid='AMT1' and to_char(cbb2.enddat,'yyyymmdd')='22991231'
+and cbb3.cbc='MAXSUM' and cbb3.extid='AMT2' and to_char(cbb3.enddat,'yyyymmdd')='22991231'
+and trn.inr=? " scope="this"/>
+                </filter>
+
+            </step>
+        </transaction>
+
+        <transaction id="002" version="2.0">
+            <step id="1">
+                <filter ref="publicFilter" type="in">
+                    <field tag="sql" value="select
+'002' trntyp,
+cda.cdtref loanno,
+cda.cdtref seqno,
+pta.beizhu1 cisno,
+to_Char(sysdate,'yyyymmdd')  cpldat     ,
+'000'||substr(bch.branch,1,1) zoneno     ,
+substr(bch.branch,2,4)  brno       ,
+trn.inr trninr     ,
+lid.ownref ownref     ,
+'' pntownref  ,
+'' chdownref  ,
+'' opndat     ,
+to_Char(lid.expdat,'yyyymmdd') expdat     ,
+cbb1.cur maxcur     ,
+cbb1.amt+cbb3.amt maxamt     ,
+cbb2.cur opncur     ,
+cbb2.amt opnamt     ,
+'' utlcur     ,
+cbe1.amt+cbe2.amt utlamt     ,
+'' extid      ,
+lid.tenmaxday tenmaxday  ,
+'' ref1       ,
+'' ref2       ,
+'' acc1       ,
+'' typ1       ,
+lid.stacty crycod     ,
+'' sndcnt     ,
+case lid.avbby when 'P' then 0 when 'N' then 1 when 'D' then 2 when 'A' then 3 else 4 end as sta        ,
+lid.nomtop exgrat     ,
+bopcty.txt inftxt     ,
+'0' trnflg     ,
+'' trnseqinr  ,
+'' seqinr
+from lid
+left join trn on trn.objtyp = 'LID' and trn.objinr = lid.inr
+left join cbb cbb1 on cbb1.objtyp = 'LID' and cbb1.objinr = lid.inr
+left join cbb cbb2 on cbb2.objtyp = 'LID' and cbb2.objinr = lid.inr
+left join cbb cbb3 on cbb3.objtyp = 'LID' and cbb3.objinr = lid.inr
+left join cbe cbe1 on cbe1.trntyp = 'TRN' and cbe1.trninr = trn.inr
+left join cbe cbe2 on cbe2.trntyp = 'TRN' and cbe2.trninr = trn.inr
+left join bch on bch.inr = trn.bchkeyinr
+left join pts on pts.objtyp = 'LID' and pts.objinr = lid.inr and pts.rol='APL'
+left join pty on pty.inr = pts.ptyinr
+left join pta on pta.ptyinr = pty.inr and pta.bchkeyinr=pty.bchkeyinr
+left join cda on cda.ownref = lid.ownref
+left join bopcty on bopcty.cod = lid.stacty
+where trn.inifrm = 'LITAME'
+and trn.relflg in ('R','F')
+and cbb1.cbc='MAXSUM' and cbb1.extid='AMT1' and to_char(cbb1.enddat,'yyyymmdd')='22991231'
+and cbb2.cbc='NOMSUM' and cbb2.extid='AMT1' and to_char(cbb2.enddat,'yyyymmdd')='22991231'
+and cbb3.cbc='MAXSUM' and cbb3.extid='AMT2' and to_char(cbb3.enddat,'yyyymmdd')='22991231'
+and cbe1.cbt='NOMAMT' and cbe1.extid='AMT1'
+and cbe2.cbt='MAXAMT' and cbe2.extid='AMT2'
+and trn.inr=?
+" scope="this"/>
+                </filter>
+
+            </step>
+        </transaction>
+
+        <transaction id="006" version="2.0">
+            <step id="1">
+                <filter ref="publicFilter" type="in">
+                    <field tag="sql" value="select
+'006' trntyp     ,
+cda.cdtref loanno     ,
+cda.cdtref seqno      ,
+pta.beizhu1 cisno      ,
+to_Char(sysdate,'yyyymmdd')  cpldat     ,
+'000'||substr(bch.branch,1,1) zoneno     ,
+substr(bch.branch,2,4)  brno       ,
+trn.inr trninr     ,
+brd.ownref ownref     ,
+lid.ownref pntownref  ,
+'' chdownref  ,
+to_Char(brd.rcvdat,'yyyymmdd') opndat     ,
+to_Char(brd.matdat,'yyyymmdd') expdat     ,
+'' maxcur     ,
+'' maxamt     ,
+cbb2.cur opncur     ,
+cbb2.amt opnamt     ,
+cbb1.cur utlcur     ,
+cbb1.amt utlamt     ,
+'' extid      ,
+'' tenmaxday  ,
+'' ref1       ,
+'' ref2       ,
+'' acc1       ,
+'' typ1       ,
+'' crycod     ,
+lid.utlnbr sndcnt     ,
+case brt.dtidis when ' ' then 1 else 2 end as sta        ,
+'' exgrat     ,
+brt.dtidis inftxt     ,
+'0' trnflg     ,
+'' trnseqinr  ,
+'' seqinr
+from brd
+left join trn on trn.objtyp = 'BRD' and trn.objinr = BRD.inr
+left join lid on lid.inr = brd.pntinr
+left join brt on brt.inr = brd.inr
+left join cbb cbb1 on cbb1.objtyp = 'BRD' and cbb1.objinr = brd.inr
+left join cbb cbb2 on cbb2.objtyp = 'LID' and cbb2.objinr = lid.inr
+left join bch on bch.inr = trn.bchkeyinr
+left join pts on pts.objtyp = 'BRD' and pts.objinr = brd.inr and pts.rol='APL'
+left join pty on pty.inr = pts.ptyinr
+left join pta on pta.ptyinr = pty.inr and pta.bchkeyinr=pty.bchkeyinr
+left join cda on cda.ownref = brd.ownref
+where trn.inifrm = 'LITDCK'
+and trn.relflg in ('R','F')
+and cbb1.cbc='MAXSUM' and cbb1.extid='AMT1' and to_char(cbb1.enddat,'yyyymmdd')='22991231'
+and cbb2.cbc='OPN' and cbb2.extid='AMT1' and to_char(cbb2.enddat,'yyyymmdd')='22991231'
+and trn.inr=?" scope="this"/>
+                </filter>
+
+            </step>
+        </transaction>
+
+        <transaction id="007" version="2.0">
+            <step id="1">
+                <filter ref="publicFilter" type="in">
+                    <field tag="sql" value="select
+'007' trntyp,
+cda.cdtref loanno,
+cda.cdtref seqno      ,
+pta.beizhu1 cisno      ,
+to_Char(sysdate,'yyyymmdd')  cpldat     ,
+'000'||substr(bch.branch,1,1) zoneno     ,
+substr(bch.branch,2,4)  brno       ,
+trn.inr trninr     ,
+'' ownref     ,
+lid.ownref pntownref  ,
+sgd.ownref chdownref  ,
+'' opndat     ,
+to_Char(sgd.expdat,'yyyymmdd') expdat     ,
+cbb1.cur maxcur     ,
+cbb1.amt maxamt     ,
+'' opncur     ,
+cbb2.amt opnamt     ,
+'' utlcur     ,
+'' utlamt     ,
+'' extid      ,
+'' tenmaxday  ,
+sgd.trpdocnum ref1       ,
+'' ref2       ,
+'' acc1       ,
+'' typ1       ,
+'' crycod     ,
+'' sndcnt     ,
+'' sta        ,
+'' exgrat     ,
+'' inftxt     ,
+'0' trnflg     ,
+'' trnseqinr  ,
+'' seqinr
+from sgd
+left join trn on trn.objtyp = 'SGD' and trn.objinr = sgd.inr
+left join lid on lid.inr = sgd.pntinr
+left join cbb cbb1 on cbb1.objtyp = 'SGD' and cbb1.objinr = sgd.inr
+left join cbb cbb2 on cbb2.objtyp = 'SGD' and cbb2.objinr = sgd.inr
+left join bch on bch.inr = trn.bchkeyinr
+left join pts on pts.objtyp = 'SGD' and pts.objinr = sgd.inr and pts.rol='APL'
+left join pty on pty.inr = pts.ptyinr
+left join pta on pta.ptyinr = pty.inr and pta.bchkeyinr=pty.bchkeyinr
+left join cda on cda.ownref = sgd.ownref
+where trn.inifrm = 'SGTOPN'
+and trn.relflg in ('R','F')
+and cbb1.cbc='MAXSUM' and cbb1.extid='AMT1' and to_char(cbb1.enddat,'yyyymmdd')='22991231'
+and cbb2.cbc='OPN' and cbb2.extid='AMT1' and to_char(cbb2.enddat,'yyyymmdd')='22991231'
+and trn.inr=?" scope="this"/>
+                </filter>
+
+            </step>
+        </transaction>
+
+        <transaction id="008" version="2.0">
+            <step id="1">
+                <filter ref="publicFilter" type="in">
+                    <field tag="sql" value="select
+'008' trntyp     ,
+cda.cdtref loanno     ,
+cda.cdtref seqno      ,
+pta.beizhu1 cisno      ,
+to_Char(sysdate,'yyyymmdd')  cpldat     ,
+'000'||substr(bch.branch,1,1) zoneno     ,
+substr(bch.branch,2,4)  brno       ,
+trn.inr trninr     ,
+'' ownref     ,
+lid.ownref pntownref  ,
+sgd.ownref chdownref  ,
+'' opndat     ,
+'' expdat     ,
+'' maxcur     ,
+'' maxamt     ,
+'' opncur     ,
+'' opnamt     ,
+'' utlcur     ,
+'' utlamt     ,
+'' extid      ,
+'' tenmaxday  ,
+'' ref1       ,
+'' ref2       ,
+'' acc1       ,
+'' typ1       ,
+'' crycod     ,
+'' sndcnt     ,
+'1' sta        ,
+'' exgrat     ,
+'' inftxt     ,
+'0' trnflg     ,
+'' trnseqinr  ,
+'' seqinr
+from sgd
+left join trn on trn.objtyp = 'SGD' and trn.objinr = sgd.inr
+left join lid on lid.inr = sgd.pntinr
+left join bch on bch.inr = trn.bchkeyinr
+left join pts on pts.objtyp = 'SGD' and pts.objinr = sgd.inr and pts.rol='APL'
+left join pty on pty.inr = pts.ptyinr
+left join pta on pta.ptyinr = pty.inr and pta.bchkeyinr=pty.bchkeyinr
+left join cda on cda.ownref = sgd.ownref
+where trn.inifrm = 'SGTCAN'
+and trn.relflg in ('R','F')
+and trn.inr=?" scope="this"/>
+                </filter>
+
+            </step>
+        </transaction>
+
+        <transaction id="010" version="2.0">
+            <step id="1">
+                <filter ref="publicFilter" type="in">
+                    <field tag="sql" value="select
+'010' trntyp     ,
+cda.cdtref loanno     ,
+cda.cdtref seqno      ,
+pta.beizhu1 cisno      ,
+to_Char(sysdate,'yyyymmdd')  cpldat     ,
+'000'||substr(bch.branch,1,1) zoneno     ,
+substr(bch.branch,2,4)  brno       ,
+trn.inr trninr     ,
+brd.ownref ownref     ,
+lid.ownref pntownref  ,
+'' chdownref  ,
+'' opndat     ,
+to_Char(lid.expdat,'yyyymmdd') expdat     ,
+cbb1.cur maxcur     ,
+cbb1.amt maxamt     ,
+'' opncur     ,
+'' opnamt     ,
+'' utlcur     ,
+'' utlamt     ,
+'' extid      ,
+to_Char(brd.aptdat,'yyyymmdd') tenmaxday  ,
+'' ref1       ,
+'' ref2       ,
+'' acc1       ,
+case brd.dcrtyp when 'C' then 1 else 0 end typ1       ,
+'' crycod     ,
+'' sndcnt     ,
+'' sta        ,
+'' exgrat     ,
+brt.docdis inftxt     ,
+'0' trnflg     ,
+'' trnseqinr  ,
+'' seqinr
+from brd
+left join trn on trn.objtyp = 'BRD' and trn.objinr = BRD.inr
+left join lid on lid.inr = brd.pntinr
+left join brt on brt.inr = brd.inr
+left join cbb cbb1 on cbb1.objtyp = 'BRD' and cbb1.objinr = brd.inr
+left join bch on bch.inr = trn.bchkeyinr
+left join pts on pts.objtyp = 'BRD' and pts.objinr = brd.inr and pts.rol='APL'
+left join pty on pty.inr = pts.ptyinr
+left join pta on pta.ptyinr = pty.inr and pta.bchkeyinr=pty.bchkeyinr
+left join cda on cda.ownref = brd.ownref
+where trn.inifrm = 'BRTDCR'
+and trn.relflg in ('R','F')
+and cbb1.cbc='MAXSUM' and cbb1.extid='CCVAMT' and to_char(cbb1.enddat,'yyyymmdd')='22991231'
+and trn.inr=? " scope="this"/>
+                </filter>
+
+            </step>
+        </transaction>
+
+        <transaction id="tmp" version="2.0">
+            <step id="1">
+                <filter ref="publicFilter" type="in">
+                    <field tag="sql" value="" scope="this"/>
+                </filter>
+
+            </step>
+        </transaction>
+
+        <transaction id="tmp" version="2.0">
+            <step id="1">
+                <filter ref="publicFilter" type="in">
+                    <field tag="sql" value="" scope="this"/>
+                </filter>
+
+            </step>
+        </transaction>
+
+        <transaction id="tmp" version="2.0">
+            <step id="1">
+                <filter ref="publicFilter" type="in">
+                    <field tag="sql" value="" scope="this"/>
+                </filter>
+
+            </step>
+        </transaction>
+
+        <transaction id="tmp" version="2.0">
+            <step id="1">
+                <filter ref="publicFilter" type="in">
+                    <field tag="sql" value="" scope="this"/>
+                </filter>
+
+            </step>
+        </transaction>
+
+        <transaction id="tmp" version="2.0">
+            <step id="1">
+                <filter ref="publicFilter" type="in">
+                    <field tag="sql" value="" scope="this"/>
+                </filter>
+
+            </step>
+        </transaction>
+
+        <transaction id="tmp" version="2.0">
+            <step id="1">
+                <filter ref="publicFilter" type="in">
+                    <field tag="sql" value="" scope="this"/>
+                </filter>
+
+            </step>
+        </transaction>
+
+        <transaction id="tmp" version="2.0">
+            <step id="1">
+                <filter ref="publicFilter" type="in">
+                    <field tag="sql" value="" scope="this"/>
+                </filter>
+
+            </step>
+        </transaction>
+
+        <transaction id="tmp" version="2.0">
+            <step id="1">
+                <filter ref="publicFilter" type="in">
+                    <field tag="sql" value="" scope="this"/>
+                </filter>
+
+            </step>
+        </transaction>
+
+        <transaction id="tmp" version="2.0">
+            <step id="1">
+                <filter ref="publicFilter" type="in">
+                    <field tag="sql" value="" scope="this"/>
+                </filter>
+
+            </step>
+        </transaction>
+
+        <transaction id="tmp" version="2.0">
+            <step id="1">
+                <filter ref="publicFilter" type="in">
+                    <field tag="sql" value="" scope="this"/>
+                </filter>
+
+            </step>
+        </transaction>
+
+        <transaction id="tmp" version="2.0">
+            <step id="1">
+                <filter ref="publicFilter" type="in">
+                    <field tag="sql" value="" scope="this"/>
+                </filter>
+
+            </step>
+        </transaction>
+
+
+    </interface>
+
+
+</root>

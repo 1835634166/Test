@@ -1,0 +1,324 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<root xmlns="http://www.brilliance.com.cn/interface" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://www.brilliance.com.cn/interface ../etc/schema/interface.xsd">
+
+
+    <interface id="xindai_sql" type="server" version="2.0" defaultScope="transaction">
+
+
+
+
+<!--        进口信用证-->
+        <transaction id="cx01" version="2.0" >
+            <step id="requestStep">
+                <import ref="xindaiCommonHead" file="#{COMMONIMPORT}"/>
+
+                <filter ref="publicFilter" type="in">
+                    <field tag="sql" value="SELECT LID.OWNREF REFNO,'' CISNO,PTY.NAMCHN PTYNAM,'ILC' BUSTYP,'' RELTYP,'' CUR,0 AMT,'' CREDAT,'' BEGDAT,'' ENDDAT,LID.CDTREF RELREF ,'' TOLERANCE,'' TENOR,'' TENORDAYS,'' TENORID,'' DISFLG,'' ACCFLG,'' ACCCUR,0 ACCAMT,'' CORCLINAM,'' CORBNKCIS,'' CORBNKBIC,'' CORBNKNAM
+FROM LID
+LEFT JOIN REPTRN TRN ON TRN.OBJTYP = 'LID' AND TRN.OBJINR = LID.INR
+LEFT JOIN PTY ON PTY.INR = TRN.PTYINR
+WHERE TRN.INIFRM = 'LITOPN'"/>
+                    <if condition="${!''.equals(RELREF)}">
+                        <field tag="sql" value="${sql} AND
+LID.CDTREF= ${RELREF}"/>
+                    </if>
+                    <field tag="sql" value="${sql} AND
+TO_CHAR(LID.OPNDAT,'YYYYMMDD') >= ${StartDate}
+AND
+TO_CHAR(LID.OPNDAT,'YYYYMMDD') &lt;= ${EndDate}"/>
+                </filter>
+
+                <connection ref="jdbcConnection" type="in"/>
+                <filter ref="sqlFilter" type="in">
+                    <field tag="rs" etag="${sql}" type="LST">
+
+                    </field>
+                </filter>
+
+                <import ref="xindaiSQLRtn" file="#{COMMONIMPORT}"/>
+
+            </step>
+        </transaction>
+
+
+
+
+
+<!--        进口信用证单据-->
+        <transaction id="cx02" version="2.0" >
+            <step id="requestStep">
+                <import ref="xindaiCommonHead" file="#{COMMONIMPORT}"/>
+
+                <filter ref="publicFilter" type="in">
+                    <field tag="sql" value="SELECT REFNO,CISNO,PTYNAM,BUSTYP,RELTYP,CUR,AMT,CREDAT,BEGDAT,ENDDAT,LISTAGG(RELREF,'#') RELREF,TOLERANCE,TENOR,TENORDAYS,TENORID,DISFLG,ACCFLG,ACCCUR,ACCAMT,CORCLINAM,CORBNKCIS,CORBNKBIC,CORBNKNAM FROM (
+SELECT BRD.OWNREF REFNO,'' CISNO,PTY.NAMCHN PTYNAM,'ILCB' BUSTYP,BRD.DOCFLG RELTYP,BRD.DOCCUR CUR,BRD.DOCAMT AMT,TO_CHAR(BRD.RCVDAT,'YYYYMMDD') CREDAT,TO_CHAR(BRD.RCVDAT,'YYYYMMDD') BEGDAT,TO_CHAR(BRD.MATDAT,'YYYYMMDD') ENDDAT,REPLACE (REPLACE (TRIM(GODINF.OWNREF), CHR (13), ''), CHR (10), '') RELREF,'' TOLERANCE,'' TENOR,'' TENORDAYS,CASE WHEN BRD.DOCFLG= 'P' THEN 'RGF' ELSE TO_CHAR(BRD.MATDAT,'YYYYMMDD') END TENORID,CASE WHEN TRN2.INR = '' OR TRN2.INR IS NULL THEN 'N' ELSE 'Y' END DISFLG,CASE WHEN TRN1.INR = '' OR TRN1.INR IS NULL THEN 'N' ELSE 'Y' END ACCFLG,CASE WHEN TRN1.INR = '' OR TRN1.INR IS NULL THEN '' ELSE MAXSUMCBB.CUR END ACCCUR,CASE WHEN TRN1.INR = '' OR TRN1.INR IS NULL THEN 0 ELSE MAXSUMCBB.AMT END ACCAMT,PTS1.NAM CORCLINAM,PTS2.EXTKEY CORBNKCIS,PTS2.EXTKEY CORBNKBIC,PTS2.NAM CORBNKNAM
+FROM BRD
+LEFT JOIN REPTRN TRN ON TRN.OBJTYP = 'BRD' AND TRN.OBJINR = BRD.INR
+LEFT JOIN REPTRN TRN1 ON TRN1.OBJTYP = 'BRD' AND TRN1.OBJINR = BRD.INR AND TRN1.INIFRM = 'BRTPAY'
+LEFT JOIN REPTRN TRN2 ON TRN2.OBJTYP = 'BRD' AND TRN2.OBJINR = BRD.INR AND TRN2.INIFRM = 'LITDAV'
+LEFT JOIN PTY ON PTY.INR = TRN.PTYINR
+LEFT JOIN MAXSUMCBB ON MAXSUMCBB.OBJTYP = 'BRD' AND MAXSUMCBB.OBJINR = BRD.INR
+LEFT JOIN PTS PTS1 ON PTS1.OBJTYP = 'BRD' AND PTS1.OBJINR = BRD.INR AND PTS1.ROL = 'BEN'
+LEFT JOIN PTS PTS2 ON PTS2.OBJTYP = 'BRD' AND PTS2.OBJINR = BRD.INR AND PTS2.ROL = 'PRB'
+LEFT JOIN MAXGODINF GODINF ON GODINF.OBJTYP = 'BRD' AND GODINF.OBJINR = BRD.INR AND GODINF.DOCTYP = 'B'
+WHERE TRN.INIFRM = 'LITDCK'"/>
+                    <if condition="${!''.equals(RELTYP)}">
+                        <field tag="sql" value="${sql} AND brd.DOCFLG = '${RELTYP}'"/>
+                    </if>
+                    <if condition="${!''.equals(RELREF)}">
+                        <field tag="sql" value="${sql} AND GODINF.OWNREF= '${RELREF}'"/>
+                    </if>
+                    <if condition="${!''.equals(CUR)}">
+                        <field tag="sql" value="${sql} AND MAXSUMCBB.CUR = '${CUR}'"/>
+                    </if>
+                    <field tag="sql" value="${sql} and TO_CHAR(BRD.RCVDAT,'YYYYMMDD') >= ${StartDate}
+AND
+TO_CHAR(BRD.RCVDAT,'YYYYMMDD') &lt;= ${EndDate}
+)
+GROUP BY REFNO,CISNO,PTYNAM,BUSTYP,RELTYP,CUR,AMT,CREDAT,BEGDAT,ENDDAT,TOLERANCE,TENOR,TENORDAYS,TENORID,DISFLG,ACCFLG,ACCCUR,ACCAMT,CORCLINAM,CORBNKCIS,CORBNKBIC,CORBNKNAM
+"/>
+                </filter>
+
+
+
+                <connection ref="jdbcConnection" type="in"/>
+                <filter ref="sqlFilter" type="in">
+                    <field tag="rs" etag="${sql}" type="LST">
+
+                    </field>
+                </filter>
+
+                <import ref="xindaiSQLRtn" file="#{COMMONIMPORT}"/>
+
+            </step>
+        </transaction>
+
+<!--出口信用证-->
+        <transaction id="cx03" version="2.0" >
+            <step id="requestStep">
+                <import ref="xindaiCommonHead" file="#{COMMONIMPORT}"/>
+
+
+                <filter ref="publicFilter" type="in">
+                    <field tag="sql" value="SELECT LED.OWNREF REFNO,'' CISNO,PTY.NAMCHN PTYNAM,'ELC' BUSTYP,LED.AVBBY RELTYP,MAXSUMCBB.CUR CUR,MAXSUMCBB.AMT AMT,TO_CHAR(LED.CREDAT,'YYYYMMDD') CREDAT,TO_CHAR(LED.OPNDAT,'YYYYMMDD') BEGDAT,TO_CHAR(LED.EXPDAT,'YYYYMMDD') ENDDAT ,PTS.REF RELREF,LED.NOMTOP TOLERANCE,LED.TENTYP TENOR,LED.TENMAXDAY TENORDAYS,'' TENORID,'' DISFLG,'' ACCFLG,'' ACCCUR,0 ACCAMT,'' CORCLINAM,'' CORBNKCIS,'' CORBNKBIC,'' CORBNKNAM
+                FROM LED
+                LEFT JOIN REPTRN TRN ON TRN.OBJTYP = 'LED' AND TRN.OBJINR = LED.INR
+                LEFT JOIN PTY ON PTY.INR = TRN.PTYINR
+                LEFT JOIN PTS ON PTS.OBJTYP = 'LED' AND PTS.OBJINR =LED.INR AND PTS.ROL = 'ISS'
+                LEFT JOIN MAXSUMCBB ON MAXSUMCBB.OBJTYP = 'LED' AND MAXSUMCBB.OBJINR = LED.INR
+                WHERE TRN.INIFRM = 'LETOPN'"/>
+                    <if condition="${!''.equals(RELREF)}">
+                        <field tag="sql" value="${sql} AND
+                PTS.REF= '${RELREF}'"/>
+                    </if>
+                    <field tag="sql" value="${sql} AND
+                TO_CHAR(LED.OPNDAT,'YYYYMMDD') >= '${StartDate}'
+                AND
+                TO_CHAR(LED.OPNDAT,'YYYYMMDD') &lt;= '${EndDate}'"/>
+                </filter>
+
+
+                <connection ref="jdbcConnection" type="in"/>
+                <filter ref="sqlFilter" type="in">
+                    <field tag="rs" etag="${sql}" type="LST">
+
+                    </field>
+                </filter>
+
+                <import ref="xindaiSQLRtn" file="#{COMMONIMPORT}"/>
+
+            </step>
+        </transaction>
+
+
+
+
+<!--     出口信用证单据   -->
+
+        <transaction id="cx04" version="2.0" >
+            <step id="requestStep">
+                <import ref="xindaiCommonHead" file="#{COMMONIMPORT}"/>
+
+                <filter ref="publicFilter" type="in">
+                    <field tag="sql" value="SELECT REFNO,CISNO,PTYNAM,BUSTYP,RELTYP,CUR,AMT,CREDAT,BEGDAT,ENDDAT,LISTAGG(RELREF,'#') RELREF,TOLERANCE,TENOR,TENORDAYS,TENORID,DISFLG,ACCFLG,ACCCUR,ACCAMT,CORCLINAM,CORBNKCIS,CORBNKBIC,CORBNKNAM FROM (
+SELECT BED.OWNREF REFNO,'' CISNO,PTY.NAMCHN PTYNAM,'ELCB' BUSTYP,BED.DOCTYPCOD RELTYP,MAXSUMCBB.CUR CUR,MAXSUMCBB.AMT AMT,TO_CHAR(TRN.INIDATTIM,'YYYYMMDD') CREDAT,TO_CHAR(TRN.INIDATTIM,'YYYYMMDD') BEGDAT,TO_CHAR(BED.MATDAT,'YYYYMMDD') ENDDAT,REPLACE (REPLACE (TRIM(GODINF.OWNREF), CHR (13), ''), CHR (10), '') RELREF,'' TOLERANCE,'' TENOR,'' TENORDAYS,CASE WHEN BED.DOCTYPCOD= 'P' THEN 'RGF' ELSE TO_CHAR(BED.MATDAT,'YYYYMMDD') END TENORID,CASE WHEN TRN2.INR = '' OR TRN2.INR IS NULL THEN 'N' ELSE 'Y' END DISFLG,CASE WHEN TRN1.INR = '' OR TRN1.INR IS NULL THEN 'N' ELSE 'Y' END ACCFLG,CASE WHEN TRN1.INR = '' OR TRN1.INR IS NULL THEN '' ELSE BED.CDCUR END ACCCUR,CASE WHEN TRN1.INR = '' OR TRN1.INR IS NULL THEN 0 ELSE BED.CDAMT END ACCAMT,PTS1.NAM CORCLINAM,'' CORBNKCIS,'' CORBNKBIC,'' CORBNKNAM
+FROM BED
+LEFT JOIN REPTRN TRN ON TRN.OBJTYP = 'BED' AND TRN.OBJINR = BED.INR
+LEFT JOIN REPTRN TRN1 ON TRN1.OBJTYP = 'BED' AND TRN1.OBJINR = BED.INR AND TRN1.INIFRM = 'BETPAY'
+LEFT JOIN REPTRN TRN2 ON TRN2.OBJTYP = 'BED' AND TRN2.OBJINR = BED.INR AND TRN2.INIFRM = 'LETDAV'
+LEFT JOIN PTY ON PTY.INR = TRN.PTYINR
+LEFT JOIN MAXSUMCBB ON MAXSUMCBB.OBJTYP = 'BED' AND MAXSUMCBB.OBJINR = BED.INR
+LEFT JOIN PTS PTS1 ON PTS1.OBJTYP = 'BED' AND PTS1.OBJINR = BED.INR AND PTS1.ROL = 'APL'
+LEFT JOIN MAXGODINF GODINF ON GODINF.OBJTYP = 'BED' AND GODINF.OBJINR = BED.INR AND GODINF.DOCTYP = 'B'
+WHERE TRN.INIFRM = 'LETDRV'"/>
+                    <if condition="${!''.equals(RELTYP)}">
+                        <field tag="sql" value="${sql} AND BED.DOCTYPCOD = '${RELTYP}'"/>
+                    </if>
+                    <if condition="${!''.equals(RELREF)}">
+                        <field tag="sql" value="${sql} AND GODINF.OWNREF='${RELREF}'"/>
+                    </if>
+                    <if condition="${!''.equals(CUR)}">
+                        <field tag="sql" value="${sql} AND MAXSUMCBB.CUR = '${CUR}'"/>
+                    </if>
+                    <field tag="sql" value="${sql} AND TO_CHAR(TRN.INIDATTIM,'YYYYMMDD') >= '${StartDate}'
+AND
+TO_CHAR(TRN.INIDATTIM,'YYYYMMDD') &lt;= '${EndDate}'
+)
+GROUP BY REFNO,CISNO,PTYNAM,BUSTYP,RELTYP,CUR,AMT,CREDAT,BEGDAT,ENDDAT,TOLERANCE,TENOR,TENORDAYS,TENORID,DISFLG,ACCFLG,ACCCUR,ACCAMT,CORCLINAM,CORBNKCIS,CORBNKBIC,CORBNKNAM
+"/>
+                </filter>
+
+
+                <connection ref="jdbcConnection" type="in"/>
+                <filter ref="sqlFilter" type="in">
+                    <field tag="rs" etag="${sql}" type="LST">
+
+                    </field>
+                </filter>
+
+                <import ref="xindaiSQLRtn" file="#{COMMONIMPORT}"/>
+
+            </step>
+        </transaction>
+
+
+
+
+<!--国内买方信用证-->
+
+        <transaction id="cx05" version="2.0" >
+            <step id="requestStep">
+                <import ref="xindaiCommonHead" file="#{COMMONIMPORT}"/>
+
+
+                <filter ref="publicFilter" type="in">
+                    <field tag="sql" value="SELECT DID.OWNREF REFNO,'' CISNO,PTY.NAMCHN PTYNAM,'DILC' BUSTYP,'' RELTYP,'' CUR,0 AMT,'' CREDAT,'' BEGDAT,'' ENDDAT,DID.CDTREF RELREF,'' TOLERANCE,'' TENOR,'' TENORDAYS,'' TENORID,'' DISFLG,'' ACCFLG,'' ACCCUR,0 ACCAMT,'' CORCLINAM,'' CORBNKCIS,'' CORBNKBIC,'' CORBNKNAM
+        FROM DID
+        LEFT JOIN REPTRN TRN ON TRN.OBJTYP = 'DID' AND TRN.OBJINR = DID.INR
+        LEFT JOIN PTY ON PTY.INR = TRN.PTYINR
+        WHERE TRN.INIFRM = 'DITOPN'"/>
+                    <if condition="${!''.equals(RELREF)}">
+                        <field tag="sql" value="${sql} AND DID.CDTREF= '${RELREF}'"/>
+                    </if>
+                    <field tag="sql" value="${sql} AND TO_CHAR(DID.OPNDAT,'YYYYMMDD') >= '${StartDate}'
+        AND
+        TO_CHAR(DID.OPNDAT,'YYYYMMDD') &lt;= '${EndDate}'"/>
+                </filter>
+
+
+                <connection ref="jdbcConnection" type="in"/>
+                <filter ref="sqlFilter" type="in">
+                    <field tag="rs" etag="${sql}" type="LST">
+
+                    </field>
+                </filter>
+
+                <import ref="xindaiSQLRtn" file="#{COMMONIMPORT}"/>
+
+            </step>
+        </transaction>
+
+
+<!--        进口代收sql-->
+        <transaction id="cx06" version="2.0" >
+            <step id="requestStep">
+                <import ref="xindaiCommonHead" file="#{COMMONIMPORT}"/>
+
+                <filter ref="publicFilter" type="in">
+                    <field tag="sql" value="SELECT REFNO,CISNO,PTYNAM,BUSTYP,RELTYP,CUR,AMT,CREDAT,BEGDAT,ENDDAT,LISTAGG(RELREF,'#') RELREF,TOLERANCE,TENOR,TENORDAYS,TENORID,DISFLG,ACCFLG,ACCCUR,ACCAMT,CORCLINAM,CORBNKCIS,CORBNKBIC,CORBNKNAM FROM (
+        SELECT BCD.OWNREF REFNO,'' CISNO,PTY.NAMCHN PTYNAM,'ODC' BUSTYP,BCD.DOCTYPCOD RELTYP,MAXSUMCBB.CUR CUR,MAXSUMCBB.AMT AMT,TO_CHAR(TRN.INIDATTIM,'YYYYMMDD') CREDAT ,TO_CHAR(TRN.INIDATTIM,'YYYYMMDD') BEGDAT,TO_CHAR(BCD.DPTODATE,'YYYYMMDD') ENDDAT,REPLACE (REPLACE (TRIM(GODINF.OWNREF), CHR (13), ''), CHR (10), '') RELREF,'' TOLERANCE,'' TENOR,'' TENORDAYS,CASE WHEN BCD.MATPERBEG= '01' THEN 'RGF' ELSE TO_CHAR(BCD.DPTODATE,'YYYYMMDD') END TENORID,'' DISFLG,CASE WHEN TRN1.INR = '' OR TRN1.INR IS NULL THEN 'N' ELSE 'Y' END ACCFLG ,CASE WHEN TRN1.INR = '' OR TRN1.INR IS NULL THEN '' ELSE BCD.DOCCUR END ACCCUR,CASE WHEN TRN1.INR = '' OR TRN1.INR IS NULL THEN 0 ELSE BCD.DOCAMT END ACCAMT,PTS1.NAM CORCLINAM,PTS2.EXTKEY CORBNKCIS,PTS2.EXTKEY CORBNKBIC,PTS2.NAM CORBNKNAM
+        FROM BCD
+        LEFT JOIN REPTRN TRN ON TRN.OBJTYP = 'BCD' AND TRN.OBJINR = BCD.INR
+        LEFT JOIN REPTRN TRN1 ON TRN1.OBJTYP = 'BCD' AND TRN1.OBJINR = BCD.INR AND TRN1.INIFRM = 'BCTPAY'
+        LEFT JOIN PTY ON PTY.INR = TRN.PTYINR
+        LEFT JOIN MAXSUMCBB ON MAXSUMCBB.OBJTYP = 'BCD' AND MAXSUMCBB.OBJINR = BCD.INR
+        LEFT JOIN PTS PTS1 ON PTS1.OBJTYP = 'BCD' AND PTS1.OBJINR = BCD.INR AND PTS1.ROL = 'DRR'
+        LEFT JOIN PTS PTS2 ON PTS2.OBJTYP = 'BCD' AND PTS2.OBJINR = BCD.INR AND PTS2.ROL = 'RMI'
+        LEFT JOIN MAXGODINF GODINF ON GODINF.OBJTYP = 'BCD' AND GODINF.OBJINR = BCD.INR AND GODINF.DOCTYP = 'B'
+        WHERE TRN.INIFRM = 'BCTDAV'"/>
+                    <if condition="${!''.equals(RELTYP)}">
+                        <field tag="sql" value="${sql} AND BCD.DOCTYPCOD = '${RELTYP}'"/>
+                    </if>
+                    <if condition="${!''.equals(RELREF)}">
+                        <field tag="sql" value="${sql} AND GODINF.OWNREF ='${RELREF}'"/>
+                    </if>
+                    <if condition="${!''.equals(CUR)}">
+                        <field tag="sql" value="${sql} AND MAXSUMCBB.CUR = '${CUR}'"/>
+                    </if>
+                    <field tag="sql" value="${sql} AND TO_CHAR(TRN.INIDATTIM,'YYYYMMDD') >= '${StartDate}'
+        AND
+        TO_CHAR(TRN.INIDATTIM,'YYYYMMDD') &lt;= '${EndDate}'
+        )
+        GROUP BY REFNO,CISNO,PTYNAM,BUSTYP,RELTYP,CUR,AMT,CREDAT,BEGDAT,ENDDAT,TOLERANCE,TENOR,TENORDAYS,TENORID,DISFLG,ACCFLG,ACCCUR,ACCAMT,CORCLINAM,CORBNKCIS,CORBNKBIC,CORBNKNAM
+"/>
+                </filter>
+
+
+                <connection ref="jdbcConnection" type="in"/>
+                <filter ref="sqlFilter" type="in">
+                    <field tag="rs" etag="${sql}" type="LST">
+
+                    </field>
+                </filter>
+
+                <import ref="xindaiSQLRtn" file="#{COMMONIMPORT}"/>
+
+            </step>
+        </transaction>
+
+
+<!--出口托收sql-->
+
+        <transaction id="cx07" version="2.0" >
+            <step id="requestStep">
+                <import ref="xindaiCommonHead" file="#{COMMONIMPORT}"/>
+
+                <filter ref="publicFilter" type="in">
+                    <field tag="sql" value="SELECT REFNO,CISNO,PTYNAM,BUSTYP,RELTYP,CUR,AMT,CREDAT,BEGDAT,ENDDAT,LISTAGG(RELREF,'#') RELREF,TOLERANCE,TENOR,TENORDAYS,TENORID,DISFLG,ACCFLG,ACCCUR,ACCAMT,CORCLINAM,CORBNKCIS,CORBNKBIC,CORBNKNAM FROM (
+        SELECT BOD.OWNREF REFNO,'' CISNO,PTY.NAMCHN PTYNAM,'IDC' BUSTYP,BOD.DOCTYPCOD RELTYP,MAXSUMCBB.CUR CUR,MAXSUMCBB.AMT AMT,TO_CHAR(TRN.INIDATTIM,'YYYYMMDD') CREDAT,TO_CHAR(TRN.INIDATTIM,'YYYYMMDD') BEGDAT,TO_CHAR(BOD.DPTODATE,'YYYYMMDD') ENDDAT,REPLACE (REPLACE (TRIM(GODINF.OWNREF), CHR (13), ''), CHR (10), '') RELREF,'' TOLERANCE,'' TENOR,'' TENORDAYS,CASE WHEN BOD.MATPERBEG= '01' THEN 'RGF' ELSE TO_CHAR(BOD.DPTODATE,'YYYYMMDD') END TENORID,'' DISFLG,CASE WHEN TRN1.INR = '' OR TRN1.INR IS NULL THEN 'N' ELSE 'Y' END ACCFLG ,CASE WHEN TRN1.INR = '' OR TRN1.INR IS NULL THEN '' ELSE BOD.DOCCUR END ACCCUR,CASE WHEN TRN1.INR = '' OR TRN1.INR IS NULL THEN 0 ELSE BOD.DOCAMT END ACCAMT,PTS1.NAM CORCLINAM,PTS2.EXTKEY CORBNKCIS,PTS2.EXTKEY CORBNKBIC,PTS2.NAM CORBNKNAM
+        FROM BOD
+        LEFT JOIN REPTRN TRN ON TRN.OBJTYP = 'BOD' AND TRN.OBJINR = BOD.INR
+        LEFT JOIN REPTRN TRN1 ON TRN1.OBJTYP = 'BOD' AND TRN1.OBJINR = BOD.INR AND TRN1.INIFRM = 'BOTPAY'
+        LEFT JOIN PTY ON PTY.INR = TRN.PTYINR
+        LEFT JOIN MAXSUMCBB ON MAXSUMCBB.OBJTYP = 'BOD' AND MAXSUMCBB.OBJINR = BOD.INR
+        LEFT JOIN PTS PTS1 ON PTS1.OBJTYP = 'BOD' AND PTS1.OBJINR = BOD.INR AND PTS1.ROL = 'DRE'
+        LEFT JOIN PTS PTS2 ON PTS2.OBJTYP = 'BOD' AND PTS2.OBJINR = BOD.INR AND PTS2.ROL = 'COL'
+        LEFT JOIN MAXGODINF GODINF ON GODINF.OBJTYP = 'BOD' AND GODINF.OBJINR = BOD.INR AND GODINF.DOCTYP = 'B'
+        WHERE TRN.INIFRM = 'BOTDAV'"/>
+                    <if condition="${!''.equals(RELTYP)}">
+                        <field tag="sql" value="${sql} AND BOD.DOCTYPCOD = '${RELTYP}'"/>
+                    </if>
+                    <if condition="${!''.equals(RELREF)}">
+                        <field tag="sql" value="${sql} AND GODINF.OWNREF= '${RELREF}'"/>
+                    </if>
+                    <if condition="${!''.equals(CUR)}">
+                        <field tag="sql" value="${sql} AND MAXSUMCBB.CUR = '${CUR}'"/>
+                    </if>
+                    <field tag="sql" value="${sql} AND TO_CHAR(TRN.INIDATTIM,'YYYYMMDD') >= '${StartDate}'
+        AND
+        TO_CHAR(TRN.INIDATTIM,'YYYYMMDD') &lt;= '${EndDate}'
+        )
+        GROUP BY REFNO,CISNO,PTYNAM,BUSTYP,RELTYP,CUR,AMT,CREDAT,BEGDAT,ENDDAT,TOLERANCE,TENOR,TENORDAYS,TENORID,DISFLG,ACCFLG,ACCCUR,ACCAMT,CORCLINAM,CORBNKCIS,CORBNKBIC,CORBNKNAM
+"/>
+                </filter>
+
+                <connection ref="jdbcConnection" type="in"/>
+                <filter ref="sqlFilter" type="in">
+                    <field tag="rs" etag="${sql}" type="LST">
+
+                    </field>
+                </filter>
+
+                <import ref="xindaiSQLRtn" file="#{COMMONIMPORT}"/>
+
+            </step>
+        </transaction>
+
+
+
+
+    </interface>
+
+
+</root>

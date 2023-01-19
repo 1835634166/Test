@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<root xmlns="http://www.brilliance.com.cn/interface"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://www.brilliance.com.cn/interface ../etc/schema/interface.xsd">
+
+    <!-- 活期储蓄转账业务/对公活期销户 -->
+    <interface id="core_2120" type="server" version="2.0" defaultScope="transaction">
+
+        <transaction id="core_2120" version="2.0">
+            <step id="1">
+                <filter type="in" ref="publicFilter">
+                    
+
+                       <field tag="LevyNo"                 value="${this[0][0]}"  description="申报号码" />
+                       <field tag="OperType"               value="${this[0][2]}" codetable="core_bs" description="操作类型" />
+                       <field tag="ActionDesc"             value="${this[0][3]}"  description="变更/撤销原因" />
+                       <field tag="BankOrgCode"            value="${this[0][4]}"  description="银行机构代码" />
+                       <field tag="AcctType"               value="${this[0][5]}"  description="账户类型" />
+                       <field tag="AcctState"              value="${this[0][6]}"  description="账户状态" />
+                       <field tag="CurrencyCode"           value="${this[0][7]}"  description="币种" />
+                       <field tag="BicBkAcct"              value="${this[0][8]}"  description="主账户账号" />
+                       <field tag="OpenDate"               value="${this[0][9]}"  description="开户日期" />
+                       <field tag="OperDate"               value="${this[0][10]}"  description="操作日期" />
+                       <field tag="InitQuan"               value="${this[0][11]}" description="初始批准额度" />
+                       <field tag="ApproveOrder"           value="${this[0][12]}" description="初始额度批准文号" />
+                       <field tag="CollectAmt"             value="${this[0][13]}" description="已募集资金金额" />
+                       <field tag="EconDeptClass"          value="${this[0][14]}" description="国民经济部门分类" />
+                       <field tag="OutOrgName"             value="${this[0][15]}" description="境外机构名称" />
+                       <field tag="CountryCode"            value="${this[0][16]}" description="注册国家（地区）代码" />
+                       <field tag="OrgCode"                value="${this[0][17]}" description="存款人特殊机构代码" />
+                       <field tag="RecordNo"               value="${this[0][18]}" description="备案编号" />
+                       <field tag="PeopleName"             value="${this[0][19]}" description="联系人名称" />
+                       <field tag="PeoplePhone"            value="${this[0][20]}" description="联系电话" />
+                       <field tag="Address"                value="${this[0][21]}" description="联系地址" />
+                       
+                       <field tag="OpenDate" value="${isEmpty(OpenDate)?null:parseDate(OpenDate,'yyyyMMdd')}"/>
+                       <field tag="OperDate" value="${isEmpty(OperDate)?null:parseDate(OperDate,'yyyyMMdd')}"/>
+            
+                </filter>
+
+ <!-- 报送平台数据库连接 -->
+                <!-- 进行相应的数据库操作 -->
+                <connection ref="szsbJdbcConn" type="in"/>
+
+
+                <filter type="in" ref="sqlFilter">
+                    <field tag="codes" etag="select decnum from bch where cnapno = ?" type="LST">
+                        <argument value="${BankOrgCode}"/>
+                    </field>
+                    <field tag="tmpcode" value="${codes[0]['DECNUM']}"/>
+                    <field tag="tmpdate" value="${formatNow('yyMMdd')}"/>
+                    <field tag="tmpNo" value="10"/>
+                    <field tag="tmpdate1" value="${tmpNo}${tmpdate}"/>
+                    <field tag="tmplsh" value="${__this.getCNTinr1(tmpdate1,4)}"/>
+                    <field tag="LevyNo" value="${tmpcode}${tmpdate}${tmpNo}${tmplsh}"/>
+
+                </filter>
+
+
+                <filter type="in" ref="sqlFilter">
+                    	<field tag="tdjinr" value="${__this.getCNTinr1('tdj')}"/>
+                        <field etag="insert into tdj (inr,LevyNo,OperType,ActionDesc,BankOrgCode,AcctType,AcctState,CurrencyCode,BicBkAcct,
+						OpenDate,OperDate,InitQuan,ApproveOrder,CollectAmt) 
+						values(?,?,?,?,?,?,?,?,?,?,?,?,?,?)">
+                            <argument value="${tdjinr}"/>
+                            <argument value="${LevyNo}"/>
+                            <argument value="${OperType}"/>
+							<argument value="${ActionDesc}"/>
+							<argument value="${BankOrgCode}"/>
+							<argument value="${AcctType}"/>
+							<argument value="${AcctState}"/>
+							<argument value="${CurrencyCode}"/>
+							<argument value="${BicBkAcct}"/>
+							<argument value="${OpenDate}"/>
+							<argument value="${OperDate}"/>
+							<argument value="${InitQuan}"/>
+							<argument value="${ApproveOrder}"/>
+							<argument value="${CollectAmt}"/>
+                        </field>
+                        
+                        
+                        
+                        
+                        <field tag="tdiinr" value="${__this.getCNTinr1('tdi')}"/>
+                        <field etag="insert into tdi (inr,tdjinr,EconDeptClass,OutOrgName,CountryCode,OrgCode,RecordNo,PeopleName,PeoplePhone,Address) 
+						values(?,?,?,?,?,?,?,?,?,?)">
+                            <argument value="${tdiinr}"/>
+                            <argument value="${tdjinr}"/>
+							<argument value="${EconDeptClass}"/>
+							<argument value="${OutOrgName}"/>
+							<argument value="${CountryCode}"/>
+							<argument value="${OrgCode}"/>
+							<argument value="${RecordNo}"/>
+							<argument value="${PeopleName}"/>
+							<argument value="${PeoplePhone}"/>
+							<argument value="${Address}"/>
+							
+                            
+							
+                        </field>
+                        
+                        
+                        <field tag="ocrs" etag="select inr from bch where DECNUM = ?" type="LST">
+                            <argument value="${BankOrgCode}"/>
+                        </field>
+                        <field tag="bchinr" value="${ocrs.size()>0?ocrs[0]['inr']:''}"/>
+
+                        
+                       <field etag="insert into DBL(INR,OBJTYP,OBJINR,RPTNO,BASSTA,DCLSTA,VRFSTA,OWNEXTKEY,OWNUSR,TRNINR,CREDAT,RELDAT,TMPREF,TRDTYP,ACTTYP,SNDFLG,DATSRC,PTYNUM,EXTINF,FILNAM,PNTINR,CURFLG) values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)">
+                    	     <argument value="${__this.getCNTinr1('dbl')}"/>
+                    		 <argument value="tdj"/>
+                    		 <argument value="${tdjinr}"/>
+                    		 <argument value="${LevyNo}"/>         <!-- ???申报号码 -->
+                    		 <argument value="#{BASSTA}"/>
+                    		 <argument value=""/>
+                    		 <argument value=""/>
+                    		 <argument value="${bchinr}"/>
+                    		 <argument value=""/>
+                    		 <argument value=""/>
+                    		 <argument value="${formatNow('yyyy-MM-dd HH:mm:ss')}"/>
+                    		 <argument value="${formatNow('yyyy-MM-dd HH:mm:ss')}"/>
+                    		 <argument value=""/>  <!-- ???临时申报流水号  -->
+                    		 <argument value=""/>
+                    		 <argument value=""/>
+                    		 <argument value="#{SNDFLG}"/> 
+                    		 <argument value="K"/>
+                    		 <argument value=""/>
+                    		 <argument value=""/>
+                    		 <argument value=""/>
+                    		 <argument value=""/>
+                    		 <argument value="*"/>
+                    	</field>
+                    <field etag="commit"/>
+                </filter>
+                 <filter type="out" ref="coreSplitFilter" encoding="#{ENCODING}">
+                    <field value="0000"/>
+                    <field value="处理成功"/>
+                </filter>
+            </step>
+
+            <step id="exception" >
+             <filter type="out" ref="coreSplitFilter" encoding="#{ENCODING}">
+                    <field value="9999"/>
+                    <field value="处理失败"/>
+                </filter>
+               
+            </step>
+        </transaction>
+
+
+    </interface>
+
+
+</root>

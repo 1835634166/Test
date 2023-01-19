@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<root xmlns="http://www.brilliance.com.cn/interface"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://www.brilliance.com.cn/interface ../etc/schema/interface.xsd">
+
+      <!--2120-->
+    <interface id="O_M13_JHJWRJ" type="server" version="2.0" defaultScope="transaction">
+
+        <transaction id="O_M13_JHJWRJ" version="2.0" loglevel="debug">
+            <step id="1">
+                <filter type="in" ref="publicFilter">
+                    <field tag="filepath" value="${this[0]}"/>
+                </filter>
+                <connection ref="fileConnection" type="in" encoding="#{SC_ENCODING}">
+                    <property name="path" value="${filepath}"/>
+                    <property name="type" value="list"/>
+                </connection>
+
+
+                <filter ref="pipeFileFilter" type="in" encoding="#{SC_ENCODING}">
+                    <field tag="rsize" value="${__this.getRecordSize()}"/>
+                    <foreach tag="i" end="${rsize}" condition="${__this.next()}">
+                       <field tag="LevyNo[${i}]"                 etag="0"  description="申报号码" />
+                       <field tag="OperType[${i}]"               etag="1"  description="操作类型" />
+                       <field tag="ActionDesc[${i}]"             etag="2"  description="变更/撤销原因" />
+                       <field tag="BankOrgCode[${i}]"            etag="3"  description="银行机构代码" />
+                       <field tag="AcctType[${i}]"               etag="4"  description="账户类型" />
+                       <field tag="AcctState[${i}]"              etag="5"  description="账户状态" />
+                       <field tag="CurrencyCode[${i}]"           etag="6"  description="币种" />
+                       <field tag="BicBkAcct[${i}]"              etag="7"  description="主账户账号" />
+                       <field tag="OpenDate[${i}]"               etag="8"  description="开户日期" />
+                       <field tag="OperDate[${i}]"               etag="9"  description="操作日期" />
+                       <field tag="InitQuan[${i}]"               etag="10" description="初始批准额度" />
+                       <field tag="ApproveOrder[${i}]"           etag="11" description="初始额度批准文号" />
+                       <field tag="CollectAmt[${i}]"             etag="12" description="已募集资金金额" />
+                       <field tag="EconDeptClass[${i}]"          etag="13" description="国民经济部门分类" />
+                       <field tag="OutOrgName[${i}]"             etag="14" description="境外机构名称" />
+                       <field tag="CountryCode[${i}]"            etag="15" description="注册国家（地区）代码" />
+                       <field tag="OrgCode[${i}]"                etag="16" description="存款人特殊机构代码" />
+                       <field tag="RecordNo[${i}]"               etag="17" description="备案编号" />
+                       <field tag="PeopleName[${i}]"             etag="18" description="联系人名称" />
+                       <field tag="PeoplePhone[${i}]"            etag="19" description="联系电话" />
+                       <field tag="Address[${i}]"                etag="20" description="联系地址" />
+						
+                        <field tag="OpenDate[${i}]" value="${isEmpty(OpenDate[i])?null:parseDate(OpenDate[i],'yyyyMMdd')}"/>
+                        <field tag="OperDate[${i}]" value="${isEmpty(OperDate[i])?null:parseDate(OperDate[i],'yyyyMMdd')}"/>
+                    </foreach>
+                </filter>
+                <!-- 报送平台数据库连接 -->
+                <!-- 进行相应的数据库操作 -->
+                <connection ref="szsbJdbcConn" type="in"/>
+
+
+                <filter type="in" ref="sqlFilter">
+                    <foreach tag="i" end="${rsize}">
+                    <field tag="codes" etag="select decnum from bch where cnapno = ?" type="LST">
+                        <argument value="${BankOrgCode[i]}"/>
+                    </field>
+                    <field tag="tmpcode" value="${codes[0]['DECNUM']}"/>
+                    <field tag="tmpdate" value="${formatNow('yyMMdd')}"/>
+                    <field tag="tmpNo" value="10"/>
+                    <field tag="tmpdate1" value="${tmpNo}${tmpdate}"/>
+                    <field tag="tmplsh" value="${__this.getCNTinr1(tmpdate1,4)}"/>
+                    <field tag="LevyNo[${i}]" value="${tmpcode}${tmpdate}${tmpNo}${tmplsh}"/>
+                    </foreach>
+                </filter>
+
+
+                <filter type="in" ref="sqlFilter">
+                    <foreach tag="i" end="${rsize}">
+                    	<field tag="tdjinr" value="${__this.getCNTinr1('tdj')}"/>
+                        <field etag="insert into tdj (inr,LevyNo,OperType,ActionDesc,BankOrgCode,AcctType,AcctState,CurrencyCode,BicBkAcct,
+						OpenDate,OperDate,InitQuan,ApproveOrder,CollectAmt) 
+						values(?,?,?,?,?,?,?,?,?,?,?,?,?,?)">
+                            <argument value="${tdjinr}"/>
+                            <argument value="${LevyNo[i]}"/>
+                            <argument value="${OperType[i]}"/>
+							<argument value="${ActionDesc[i]}"/>
+							<argument value="${BankOrgCode[i]}"/>
+							<argument value="${AcctType[i]}"/>
+							<argument value="${AcctState[i]}"/>
+							<argument value="${CurrencyCode[i]}"/>
+							<argument value="${BicBkAcct[i]}"/>
+							<argument value="${OpenDate[i]}"/>
+							<argument value="${OperDate[i]}"/>
+							<argument value="${InitQuan[i]}"/>
+							<argument value="${ApproveOrder[i]}"/>
+							<argument value="${CollectAmt[i]}"/>
+                        </field>
+                        
+                        
+                        
+                        
+                        <field tag="tdiinr" value="${__this.getCNTinr1('tdi')}"/>
+                        <field etag="insert into tdi (inr,tdjinr,EconDeptClass,OutOrgName,CountryCode,OrgCode,RecordNo,PeopleName,PeoplePhone,Address) 
+						values(?,?,?,?,?,?,?,?,?,?)">
+                            <argument value="${tdiinr}"/>
+                            <argument value="${tdjinr}"/>
+							<argument value="${EconDeptClass[i]}"/>
+							<argument value="${OutOrgName[i]}"/>
+							<argument value="${CountryCode[i]}"/>
+							<argument value="${OrgCode[i]}"/>
+							<argument value="${RecordNo[i]}"/>
+							<argument value="${PeopleName[i]}"/>
+							<argument value="${PeoplePhone[i]}"/>
+							<argument value="${Address[i]}"/>
+							
+                            
+							
+                        </field>
+                        
+                        
+                        <field tag="ocrs" etag="select inr from bch where DECNUM = ?" type="LST">
+                            <argument value="${BankOrgCode[i]}"/>
+                        </field>
+                        <field tag="bchinr" value="${ocrs.size()>0?ocrs[0]['inr']:''}"/>
+
+                        
+                       <field etag="insert into DBL(INR,OBJTYP,OBJINR,RPTNO,BASSTA,DCLSTA,VRFSTA,OWNEXTKEY,OWNUSR,TRNINR,CREDAT,RELDAT,TMPREF,TRDTYP,ACTTYP,SNDFLG,DATSRC,PTYNUM,EXTINF,FILNAM,PNTINR,CURFLG) values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)">
+                    	     <argument value="${__this.getCNTinr1('dbl')}"/>
+                    		 <argument value="tdj"/>
+                    		 <argument value="${tdjinr}"/>
+                    		 <argument value="${LevyNo[i]}"/>         <!-- ???申报号码 -->
+                    		 <argument value="#{BASSTA}"/>
+                    		 <argument value=""/>
+                    		 <argument value=""/>
+                    		 <argument value="${bchinr}"/>
+                    		 <argument value=""/>
+                    		 <argument value=""/>
+                    		 <argument value="${formatNow('yyyy-MM-dd HH:mm:ss')}"/>
+                    		 <argument value="${formatNow('yyyy-MM-dd HH:mm:ss')}"/>
+                    		 <argument value=""/>  <!-- ???临时申报流水号  -->
+                    		 <argument value=""/>
+                    		 <argument value=""/>
+                    		 <argument value="#{SNDFLG}"/> 
+                    		 <argument value="K"/>
+                    		 <argument value=""/>
+                    		 <argument value=""/>
+                    		 <argument value=""/>
+                    		 <argument value=""/>
+                    		 <argument value="*"/>
+                    	</field>
+                    </foreach>
+                    <field etag="commit"/>
+                </filter>
+                <filter ref="publicFilter" type="in">
+                    <call interfaceName="SC_Loadctl" transactionName="SC_Loadctl" type="chain">
+                        <argument value="0000" description="上述入库操作执行成功返回0000"/>
+                        <argument value="${rsize}" description="已入库的数据条数"/>
+                        <argument value="${filepath}" description="文件路径 用以取ctl文件中的条数"/>
+                        <argument value="O_M13_JHJWRJ" description="接口名"/>
+                    </call>
+                </filter>
+            </step>
+
+            <step id="exception" >
+                <filter ref="publicFilter" type="in">
+                    <call interfaceName="SC_Loadctl" transactionName="SC_Loadctl" type="chain">
+                        <argument value="9999" description="上述入库操作执行失败9999"/>
+                        <argument value="0" description="已入库的数据条数 接口一旦出错，程序会rollback"/>
+                        <argument value="${filepath}" description="文件路径 用以取ctl文件中的条数"/>
+                        <argument value="O_M13_JHJWRJ" description="接口名"/>
+                    </call>
+                </filter>
+            </step>
+
+        </transaction>
+
+    </interface>
+
+
+</root>

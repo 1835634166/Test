@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<root xmlns="http://www.brilliance.com.cn/interface" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://www.brilliance.com.cn/interface ../etc/schema/interface.xsd">
+
+
+    <interface id="xindai_cx" type="server" version="2.0" defaultScope="transaction">
+
+        <transaction id="recv" version="2.0" >
+            <step id="requestStep">
+                <filter type="in" ref="publicFilter">
+                    <log value="==============================信贷收报处理开始=============================="/>
+                    <field tag="request" value="${this[0]}" />
+                    <field tag="response" value="${this[1]}"/>
+                    <field tag="msg" value="${IOUtils:toString(request.getInputStream(),'utf-8')}"/>
+                    <log value="从信贷接收到一笔报文:${msg}"/>
+                    <field value="${msg}" scope="this"/>
+
+                </filter>
+
+                <filter ref="xmlFilter" type="in">
+                    <field tag="TransCode" etag="APPROOT.PUBLIC.TransCode" scope="step"   description="交易代码" />
+                    <field tag="CIS" etag="APPROOT.PUBLIC.CIS" scope="step"          description="客户编号" />
+                    <field tag="ID" etag="APPROOT.PUBLIC.ID" scope="step"           description="证书ID" />
+                    <field tag="Language" etag="APPROOT.PUBLIC.Language" scope="step"     description="语言" />
+                    <field tag="BankOrgCode" etag="APPROOT.PUBLIC.BankOrgCode" scope="step"  description="地区号" />
+                    <field tag="BankOrgNo" etag="APPROOT.PUBLIC.BankOrgNo" scope="step"    description="网点号" />
+                    <field tag="TranDate" etag="APPROOT.PUBLIC.TranDate" scope="step"     description="交易日期" />
+                    <field tag="TranTime" etag="APPROOT.PUBLIC.TranTime" scope="step"     description="交易时间" />
+                    <field tag="fSeqno" etag="APPROOT.PUBLIC.fSeqno" scope="step"       description="指令包序列号" />
+                    <field tag="Version" etag="APPROOT.PUBLIC.Version" scope="step"      description="版本号" />
+                    <field tag="CISNO" etag="APPROOT.PRIVATE.CISNO" scope="step"       description="客户信息号" />
+                    <field tag="BUSTYP" etag="APPROOT.PRIVATE.BUSTYP" scope="step"      description="业务种类" />
+                    <field tag="REFNO" etag="APPROOT.PRIVATE.REFNO" scope="step"       description="GDMS业务编号" />
+                    <field tag="RELTYP" etag="APPROOT.PRIVATE.RELTYP" scope="step"      description="相关类型" />
+                    <field tag="RELREF" etag="APPROOT.PRIVATE.RELREF" scope="step"      description="相关编号" />
+                    <field tag="CUR" etag="APPROOT.PRIVATE.CUR" scope="step"         description="业务币种" />
+                    <field tag="StartDate" etag="APPROOT.PRIVATE.StartDate" scope="step"   description="业务发生起始日期" />
+                    <field tag="EndDate" etag="APPROOT.PRIVATE.EndDate" scope="step"     description="业务发生截止日期" />
+                </filter>
+
+                <filter ref="publicFilter" type="in">
+                    <call tag="rtn" interfaceName="xindai_sql" transactionName="${TransCode}" type="sub">
+                        <argument value="${CISNO}"/>
+                        <argument value="${BUSTYP}"/>
+                        <argument value="${REFNO}"/>
+                        <argument value="${RELTYP}"/>
+                        <argument value="${RELREF}"/>
+                        <argument value="${CUR}"/>
+                        <argument value="${StartDate}"/>
+                        <argument value="${EndDate}"/>
+                    </call>
+                    <field tag="rs" value="${rtn.content}"/>
+
+                </filter>
+
+
+
+                <filter ref="publicFilter" type="in">
+                    <field tag="num" value="${rs.size()}"/>
+                </filter>
+
+
+
+                <filter type="out" ref="xmlFilter" encoding="UTF-8">
+                    <field etag="APPROOT.PUBLIC.TransCode"   value="${TransCode}"                    description="中文名称" />
+                    <field etag="APPROOT.PUBLIC.CIS"         value="${CIS}"                          description="交易代码" />
+                    <field etag="APPROOT.PUBLIC.ID"          value="${ID}"                           description="客户编号" />
+                    <field etag="APPROOT.PUBLIC.Language"    value="${Language}"                     description="证书ID" />
+                    <field etag="APPROOT.PUBLIC.BankOrgCode" value="${BankOrgCode}"                  description="语言" />
+                    <field etag="APPROOT.PUBLIC.BankOrgNo"   value="${BankOrgNo}"                    description="地区号" />
+                    <field etag="APPROOT.PUBLIC.TranDate"    value="${TranDate}"                     description="网点号" />
+                    <field etag="APPROOT.PUBLIC.TranTime"    value="${TranTime}"                     description="交易日期" />
+                    <field etag="APPROOT.PUBLIC.fSeqno"      value="${fSeqno}"                       description="交易时间" />
+                    <field etag="APPROOT.PUBLIC.RetCode"     value="0000"                      description="交易返回码" />
+                    <field etag="APPROOT.PUBLIC.RetMsg"      value="success"                       description="交易返回描述" />
+                    <field etag="APPROOT.PRIVATE.TotalNum"  value="${num}"                    description="总条数" />
+                    <foreach tag="i" end="${num}">
+                        <field etag="APPROOT.PRIVATE.ROWSET.ROW(${i}).REFNO"     value="${rs[i]['REFNO']}"            description="GDMS业务编号" />
+                        <field etag="APPROOT.PRIVATE.ROWSET.ROW(${i}).CISNO"     value="${rs[i]['CISNO']}"            description="客户信息号" />
+                        <field etag="APPROOT.PRIVATE.ROWSET.ROW(${i}).PTYNAM"    value="${rs[i]['PTYNAM']}"           description="客户名称" />
+                        <field etag="APPROOT.PRIVATE.ROWSET.ROW(${i}).BUSTYP"    value="${rs[i]['BUSTYP']}"           description="业务种类" />
+                        <field etag="APPROOT.PRIVATE.ROWSET.ROW(${i}).RELTYP"    value="${rs[i]['RELTYP']}"           description="相关类型" />
+                        <field etag="APPROOT.PRIVATE.ROWSET.ROW(${i}).CUR"       value="${rs[i]['CUR']}"              description="币种代码" />
+                        <field etag="APPROOT.PRIVATE.ROWSET.ROW(${i}).AMT"       value="${rs[i]['AMT']}"              description="金额" />
+                        <field etag="APPROOT.PRIVATE.ROWSET.ROW(${i}).CREDAT"    value="${rs[i]['CREDAT']}"           description="业务发生日期" />
+                        <field etag="APPROOT.PRIVATE.ROWSET.ROW(${i}).BEGDAT"    value="${rs[i]['BEGDAT']}"           description="业务起始日" />
+                        <field etag="APPROOT.PRIVATE.ROWSET.ROW(${i}).ENDDAT"    value="${rs[i]['ENDDAT']}"           description="业务到期日" />
+                        <field etag="APPROOT.PRIVATE.ROWSET.ROW(${i}).RELREF"    value="${rs[i]['RELREF']}"           description="相关编号" />
+                        <field etag="APPROOT.PRIVATE.ROWSET.ROW(${i}).TOLERANCE" value="${rs[i]['TOLERANCE']}"        description="信用证溢装比" />
+                        <field etag="APPROOT.PRIVATE.ROWSET.ROW(${i}).TENOR"     value="${rs[i]['TENOR']}"            description="即远期标志" />
+                        <field etag="APPROOT.PRIVATE.ROWSET.ROW(${i}).TENORDAYS" value="${rs[i]['TENORDAYS']}"        description="远期天数" />
+                        <field etag="APPROOT.PRIVATE.ROWSET.ROW(${i}).TENORID"   value="${rs[i]['TENORID']}"          description="单据到期日标识" />
+                        <field etag="APPROOT.PRIVATE.ROWSET.ROW(${i}).DISFLG"    value="${rs[i]['DISFLG']}"           description="是否有不符点" />
+                        <field etag="APPROOT.PRIVATE.ROWSET.ROW(${i}).ACCFLG"    value="${rs[i]['ACCFLG']}"           description="是否已经承兑/承诺" />
+                        <field etag="APPROOT.PRIVATE.ROWSET.ROW(${i}).ACCCUR"    value="${rs[i]['ACCCUR']}"           description="承兑/承诺币种代码" />
+                        <field etag="APPROOT.PRIVATE.ROWSET.ROW(${i}).ACCAMT"    value="${rs[i]['ACCAMT']}"           description="承兑/承诺金额" />
+                        <field etag="APPROOT.PRIVATE.ROWSET.ROW(${i}).CORCLINAM" value="${rs[i]['CORCLINAM']}"        description="对方客户名称" />
+                        <field etag="APPROOT.PRIVATE.ROWSET.ROW(${i}).CORBNKCIS" value="${rs[i]['CORBNKCIS']}"        description="相关银行cisno" />
+                        <field etag="APPROOT.PRIVATE.ROWSET.ROW(${i}).CORBNKBIC" value="${rs[i]['CORBNKBIC']}"        description="相关银行BICCOD" />
+                        <field etag="APPROOT.PRIVATE.ROWSET.ROW(${i}).CORBNKNAM" value="${rs[i]['CORBNKNAM']}"        description="相关银行名称" />
+                    </foreach>
+
+
+                </filter>
+
+                <filter type="in" ref="publicFilter">
+                    <log value="${this}"/>
+                </filter>
+
+
+            </step>
+        </transaction>
+
+
+    </interface>
+
+
+</root>

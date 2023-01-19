@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<root xmlns="http://www.brilliance.com.cn/interface" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://www.brilliance.com.cn/interface ../etc/schema/interface.xsd">
+
+    <!-- 准贷证下载，分自动手动-->
+    <interface id="xindai_f305" type="server" version="2.0" defaultScope="transaction" >
+
+        <transaction id="xindai_f305" version="2.0">
+            <step id="1">
+                <filter type="in" ref="publicFilter">
+                    <field tag="tmp" value="${this[0][0]}" scope="transaction" />
+                </filter>
+
+                <connection ref="jdbcConnection" type="in"/>
+                <filter ref="sqlFilter" type="in">
+                    <field tag="tmp" etag="select * from tmp" type="LST">
+                        <argument value="${trninr}"/>
+                    </field>
+                </filter>
+                <filter ref="publicFilter" type="in">
+                    <field tag="TRNTYP"    value="${tmp[0]['tmp']}"/>
+                    <field tag="LOANNO"    value=""/>
+                    <field tag="SEQNO"     value=""/>
+                    <field tag="CISNO"     value=""/>
+                    <field tag="CPLDAT"    value=""/>
+                    <field tag="ZONENO"    value=""/>
+                    <field tag="BRNO"      value=""/>
+                    <field tag="TRNINR"    value=""/>
+                    <field tag="INIFRM"    value=""/>
+                    <field tag="OBJTYP"    value=""/>
+                    <field tag="OBJINR"    value=""/>
+                    <field tag="RTNFLG"    value=""/>
+                    <field tag="OWNREF"    value=""/>
+                    <field tag="PNTOWNREF" value=""/>
+                    <field tag="CHDOWNREF" value=""/>
+                    <field tag="OPNDAT"    value=""/>
+                    <field tag="EXPDAT"    value=""/>
+                    <field tag="MAXCUR"    value=""/>
+                    <field tag="MAXAMT"    value=""/>
+                    <field tag="OPNCUR"    value=""/>
+                    <field tag="OPNAMT"    value=""/>
+                    <field tag="UTLCUR"    value=""/>
+                    <field tag="UTLAMT"    value=""/>
+                    <field tag="EXTID"     value=""/>
+                    <field tag="TENMAXDAY" value=""/>
+                    <field tag="REF1"      value=""/>
+                    <field tag="REF2"      value=""/>
+                    <field tag="ACC1"      value=""/>
+                    <field tag="TYP1"      value=""/>
+                    <field tag="CRYCOD"    value=""/>
+                    <field tag="SNDCNT"    value=""/>
+                    <field tag="STA"       value=""/>
+                    <field tag="EXGRAT"    value=""/>
+                    <field tag="INFTXT"    value=""/>
+
+                </filter>
+
+
+
+                <!-- 组装保证金账户信息查询报文 -->
+                <filter type="out" ref="coreSplitFilter" encoding="#{ENCODING}">
+
+                    <field value="{TRNTYP}"    />
+                    <field value="{LOANNO}"    />
+                    <field value="{SEQNO}"     />
+                    <field value="{CISNO}"     />
+                    <field value="{CPLDAT}"    />
+                    <field value="{ZONENO}"    />
+                    <field value="{BRNO}"      />
+                    <field value="{TRNINR}"    />
+                    <field value="{INIFRM}"    />
+                    <field value="{OBJTYP}"    />
+                    <field value="{OBJINR}"    />
+                    <field value="{RTNFLG}"    />
+                    <field value="{OWNREF}"    />
+                    <field value="{PNTOWNREF}" />
+                    <field value="{CHDOWNREF}" />
+                    <field value="{OPNDAT}"    />
+                    <field value="{EXPDAT}"    />
+                    <field value="{MAXCUR}"    />
+                    <field value="{MAXAMT}"    />
+                    <field value="{OPNCUR}"    />
+                    <field value="{OPNAMT}"    />
+                    <field value="{UTLCUR}"    />
+                    <field value="{UTLAMT}"    />
+                    <field value="{EXTID}"     />
+                    <field value="{TENMAXDAY}" />
+                    <field value="{REF1}"      />
+                    <field value="{REF2}"      />
+                    <field value="{ACC1}"      />
+                    <field value="{TYP1}"      />
+                    <field value="{CRYCOD}"    />
+                    <field value="{SNDCNT}"    />
+                    <field value="{STA}"       />
+                    <field value="{EXGRAT}"    />
+                    <field value="{INFTXT}"    />
+                </filter>
+
+                <!-- 发送给核心并接收返回报文 -->
+                <import file="#{COMMONIMPORT}" ref="connectXindaiAndReturn"/>
+
+                <!-- 解析返回报文 -->
+                <filter type="in" ref="coreSplitFilter" encoding="#{ENCODING}">
+                    <field tag="responseCode" etag="0" description="响应码"/>
+                    <field tag="reason" etag="1" description="错误原因"/>
+                    <field tag="remark" etag="2" description="备注 "/>
+                </filter>
+
+                <filter ref="publicFilter" type="in">
+
+                </filter>
+
+                <!--组装返回国结报文-->
+                <filter type="out" ref="splitFilter" encoding="#{ENCODING}">
+                    <field value="${responseCode}"/>
+                    <field value="${reason}"/>
+                    <field value="${remark}"/>
+                </filter>
+            </step>
+            <step id="exception">
+                <import file="#{COMMONIMPORT}" ref="commonException" />
+            </step>
+        </transaction>
+    </interface>
+
+
+
+</root>

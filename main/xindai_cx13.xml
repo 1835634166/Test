@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<root xmlns="http://www.brilliance.com.cn/interface" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://www.brilliance.com.cn/interface ../etc/schema/interface.xsd">
+
+    <!--保函 -->
+    <interface id="xindai_cx13" type="server" version="2.0" defaultScope="transaction">
+
+        <transaction id="xindai_cx13" version="2.0">
+            <step id="1">
+                <!-- 解析请求合同信息 -->
+                <filter type="in" ref="publicFilter">
+                    <field tag="tradeCode" value="${this[0][0]}" scope="transaction" description="交易代码"/>
+                    <field tag="cis" value="${this[0][1]}" scope="transaction" description="客户编号"/>
+                    <field tag="id" value="${this[0][2]}" scope="transaction" description="证书ID"/>
+                    <field tag="language" value="${this[0][3]}" scope="transaction" description="语言"/>
+                    <field tag="bankorgcode" value="${this[0][4]}" scope="transaction" description="地区号"/>
+                    <field tag="bankorgno" value="${this[0][5]}" scope="transaction" description="网点号"/>
+                    <field tag="fseqno" value="${this[0][6]}" scope="transaction" description="指令包序列号"/>
+                    <field tag="version" value="${this[0][7]}" scope="transaction" description="版本号"/>
+                    <field tag="chnltyp" value="${this[0][8]}" scope="transaction" description="渠道类型"/>
+                    <field tag="refno" value="${this[0][9]}" scope="transaction" description="我行接收保函编号"/>
+                    <field tag="issrefno" value="${this[0][10]}" scope="transaction" description="他行开出保函编号"/>
+
+                </filter>
+
+                <filter ref="publicFilter" type="in">
+                    <field tag="sql" value="SElECT * FROM (
+                SELECT '' REFNO,'' OPNDAT,'' EXPDAT,'' CLSDAT,'' CUR,0 OPNAMT,'' ISSBIC,'' ISSNAM,'' ISSCTY,'' BENCIS,'' BENNAM,PTS1.EXTKEY APLCIS,PTS1.NAM APLNAM,GID.OWNREF ISSREFNO,GID.GARTYP ISSGARCHA,CBB.AMT AMT FROM GID
+                LEFT JOIN REPTRN TRN ON TRN.OBJTYP = 'GID' AND TRN.OBJINR = GID.INR
+                LEFT JOIN PTS PTS1 ON PTS1.OBJTYP = 'GID' AND PTS1.OBJINR = GID.INR AND PTS1.ROL = 'APL'
+                ,PTS,PTE,MAXPTECBB CBB
+                WHERE PTS.OBJTYP = 'GID' AND PTS.OBJINR = GID.INR AND PTE.OBJTYP = 'PTS' AND PTE.OBJINR = PTS.INR
+                AND CBB.OBJTYP = 'PTE' AND CBB.OBJINR = PTE.INR
+                AND TRN.INIFRM = 'GITOPN'
+                UNION
+                SELECT GED.OWNREF REFNO,TO_CHAR(GED.OPNDAT,'YYYYMMDD') OPNDAT,TO_CHAR(GED.EXPDAT,'YYYYMMDD') EXPDAT,TO_CHAR(GED.CLSDAT,'YYYYMMDD') CLSDAT,CBB.CUR CUR,CBB.AMT OPNAMT,PTS2.EXTKEY ISSBIC,PTS2.NAM ISSNAM,PTA.LOCCTY ISSCTY,PTS1.EXTKEY BENCIS,PTS1.NAM BENNAM,'' APLCIS,'' APLNAM,'' ISSREFNO,'' ISSGARCHA,0 AMT FROM GED
+                LEFT JOIN REPTRN TRN ON TRN.OBJTYP = 'GED' AND TRN.OBJINR = GED.INR
+                LEFT JOIN PTS PTS1 ON PTS1.OBJTYP = 'GED' AND PTS1.OBJINR = GED.INR AND PTS1.ROL = 'BEN'
+                LEFT JOIN PTS PTS2 ON PTS2.OBJTYP = 'GED' AND PTS2.OBJINR = GED.INR AND PTS2.ROL = 'ISS'
+                LEFT JOIN PTA ON PTA.INR = PTS2.PTAINR
+                ,PTS,PTE,MAXPTECBB CBB
+                WHERE PTS.OBJTYP = 'GED' AND PTS.OBJINR = GED.INR AND PTE.OBJTYP = 'PTS' AND PTE.OBJINR = PTS.INR
+                AND CBB.OBJTYP = 'PTE' AND CBB.OBJINR = PTE.INR
+                AND TRN.INIFRM = 'GETOPN'
+                )
+                WHERE 1=1"/>
+                    <if condition="${!''.equals(refno)}">
+                        <field tag="sql" value="${sql} AND REFNO = '${refno}'"/>
+                    </if>
+                    <if condition="${!''.equals(issrefno)}">
+                        <field tag="sql" value="${sql} AND ISSREFNO = '${issrefno}'"/>
+                    </if>
+                </filter>
+
+
+                <connection ref="jdbcConnection" type="in"/>
+                <filter ref="sqlFilter" type="in">
+                    <field tag="baohans" etag="${sql}" type="LST">
+
+                    </field>
+
+
+                    <field tag="respCode" value="0000" scope="transaction" description="应答代码"/>
+                    <field tag="respContent" value="交易成功" scope="transaction" description="应答信息"/>
+
+                </filter>
+
+                <if condition="${baohans.size()>0}">
+
+                    <!-- 组装交易成功返回报文 -->
+                    <filter type="in" ref="publicFilter">
+                        <field tag="transcode" value="cx13" scope="transaction" description="交易代码"/>
+                        <field tag="retcode" value="0" description="交易返回码"/>
+                        <field tag="retmsg" value="交易成功" description="交易返回描述"/>
+                        <field tag="refno" value="${baohans[0]['REFNO']}" description="接收保函业务编号"/>
+                        <field tag="opndat" value="${baohans[0]['OPNDAT']}" description="接收保函生效日"/>
+                        <field tag="expdat" value="${baohans[0]['EXPDAT']}" description="接收保函失效日"/>
+                        <field tag="clsdat" value="${baohans[0]['CLSDAT']}" description="接收保函注销日期"/>
+                        <field tag="cur" value="${baohans[0]['CUR']}" description="接收保函币种"/>
+                        <field tag="opnamt" value="${baohans[0]['OPNDAT']}" description="接收保函余额"/>
+                        <field tag="issbic" value="${baohans[0]['ISSBIC']}" description="接收保函开立行SWIFTCODE"/>
+                        <field tag="issnam" value="${baohans[0]['ISSNAM']}" description="接收保函开立行名称"/>
+                        <field tag="isscty" value="${baohans[0]['ISSCTY']}" description="接收保函开立行国家"/>
+                        <field tag="bencis" value="${baohans[0]['BENCIS']}" description="接收保函受益人客户编号"/>
+                        <field tag="bennam" value="${baohans[0]['BENNAM']}" description="接收保函受益人名称"/>
+                        <field tag="aplcis" value="${baohans[0]['APLCIS']}" description="开立保函申请人客户编号"/>
+                        <field tag="aplnam" value="${baohans[0]['APLNAM']}" description="开立保函申请人名称"/>
+                        <field tag="issrefno" value="${baohans[0]['ISSREFNO']}" description="开出保函编号"/>
+                        <field tag="issgarcha" value="${baohans[0]['ISSGARCHA']}" description="开出保函融资类型"/>
+                        <field tag="amt" value="${baohans[0]['AMT']}" description="保函余额（单位：元）"/>
+                        <field tag="ingroup" value="${baohans[0]['INGROUP']}" description="是否集团内业务"/>
+                    </filter>
+
+                    <filter type="out" ref="splitFilter" encoding="#{ENCODING}">
+                        <field value="${transcode}" description="交易代码"/>
+                        <field value="${retcode}" description="交易返回码"/>
+                        <field value="${retmsg}" description="交易返回描述"/>
+                        <field value="${refno}" description="接收保函业务编号"/>
+                        <field value="${opndat}" description="接收保函生效日"/>
+                        <field value="${expdat}" description="接收保函失效日"/>
+                        <field value="${clsdat}" description="接收保函注销日期"/>
+                        <field value="${cur}" description="接收保函币种"/>
+                        <field value="${opnamt}" description="接收保函余额"/>
+                        <field value="${issbic}" description="接收保函开立行SWIFTCODE"/>
+                        <field value="${issnam}" description="接收保函开立行名称"/>
+                        <field value="${isscty}" description="接收保函开立行国家"/>
+                        <field value="${bencis}" description="接收保函受益人客户编号"/>
+                        <field value="${bennam}" description="接收保函受益人名称"/>
+                        <field value="${aplcis}" description="开立保函申请人客户编号"/>
+                        <field value="${aplnam}" description="开立保函申请人名称"/>
+                        <field value="${issrefno}" description="开出保函编号"/>
+                        <field value="${issgarcha}" description="开出保函融资类型"/>
+                        <field value="${amt}" description="保函余额（单位：元）"/>
+                        <field value="${ingroup}" description="是否集团内业务"/>
+                    </filter>
+
+                </if>
+                <!--对方要求查不到全部传空-->
+                <else>
+                    <filter type="out" ref="splitFilter" encoding="#{ENCODING}">
+                        <field value="cx13" description="交易代码"/>
+                        <field value="0001" description="交易返回码"/>
+                        <field value="未查询到相关结果" description="交易返回描述"/>
+
+                        <field value="" description="接收保函业务编号"/>
+                        <field value="" description="接收保函生效日"/>
+                        <field value="" description="接收保函失效日"/>
+                        <field value="" description="接收保函注销日期"/>
+                        <field value="" description="接收保函币种"/>
+                        <field value="" description="接收保函余额"/>
+                        <field value="" description="接收保函开立行SWIFTCODE"/>
+                        <field value="" description="接收保函开立行名称"/>
+                        <field value="" description="接收保函开立行国家"/>
+                        <field value="" description="接收保函受益人客户编号"/>
+                        <field value="" description="接收保函受益人名称"/>
+                        <field value="" description="开立保函申请人客户编号"/>
+                        <field value="" description="开立保函申请人名称"/>
+                        <field value="" description="开出保函编号"/>
+                        <field value="" description="开出保函融资类型"/>
+                        <field value="" description="保函余额（单位：元）"/>
+                        <field value="" description="是否集团内业务"/>
+
+                    </filter>
+                </else>
+
+
+                <filter ref="publicFilter" type="in">
+                    <field tag="rtnmap" type="map"/>
+                    <field value="${rtnmap.put('content',${this})}"/>
+                    <field tag="rtn" value="${toJson(rtnmap)}" scope="this"/>
+                </filter>
+
+
+
+            </step>
+
+            <step id="exception">
+                <filter type="in" ref="publicFilter">
+                    <field tag="respCode" value="9999" scope="transaction" description="应答代码"/>
+                    <field tag="respContent" value="${super.description}" scope="transaction" description="应答信息"/>
+                </filter>
+                <!--  交易失败返回报文 -->
+                <import file="#{COMMONIMPORT}" ref="sendXinDaiCommonPackage"/>
+            </step>
+        </transaction>
+
+    </interface>
+</root>
